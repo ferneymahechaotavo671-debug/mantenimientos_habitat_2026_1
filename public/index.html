@@ -668,10 +668,10 @@ async function renderDashboard(){
     allMaints=await api("GET","/api/maintenances");
     var now=new Date(); var tm=now.getMonth(); var ty=now.getFullYear(); var tmN=tm+1;
     document.getElementById("stat-grid").innerHTML=
-      sc("si-t",icoB(),stats.buildings,"Copropiedades")+
-      sc("si-o",icoC(),stats.total,"Equipos Registrados")+
-      sc("si-w",icoW(),stats.doneThisMonth,"Realizados Este Mes")+
-      sc("si-d",icoA(),stats.pending,"Pendientes Este Mes");
+      sc("si-t",icoB(),stats.buildings||0,"Copropiedades")+
+      sc("si-o",icoC(),stats.total||0,"Equipos Registrados")+
+      sc("si-w",icoW(),stats.doneThisMonth||0,"Realizados Este Mes")+
+      sc("si-d",icoA(),stats.pending||0,"Pendientes Este Mes");
     document.getElementById("dash-month-lbl").textContent="Pendientes — "+MONTHS[tm]+" "+ty;
     var pendientes=allMaints.filter(function(m){ var r=getRecord(m,ty,tmN); return !r||!r.done; });
     if(!pendientes.length){

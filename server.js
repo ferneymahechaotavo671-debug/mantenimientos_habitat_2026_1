@@ -220,10 +220,14 @@ app.get('/api/maintenances', auth, async (req, res) => {
     if (!maints.length) return res.json([]);
 
     const ids = maints.map(m => m.id);
-    const { rows: recs } = await pool.query(
-      `SELECT id,maintenance_id,year,month,done,done_date,label,next_date,report,recorded_by,files,created_at,updated_at
-       FROM monthly_records WHERE maintenance_id = ANY($1) ORDER BY year,month`, [ids]
-    );
+    let recs = [];
+    try {
+      const recRes = await pool.query(
+        `SELECT id,maintenance_id,year,month,done,done_date,label,next_date,report,recorded_by,files,created_at,updated_at
+         FROM monthly_records WHERE maintenance_id = ANY($1) ORDER BY year,month`, [ids]
+      );
+      recs = recRes.rows;
+    } catch(e2) { /* monthly_records table may not exist yet, return empty */ }
 
     const recsByMaint = {};
     recs.forEach(r => {
@@ -358,19 +362,27 @@ app.get('/api/monthly-records/:recordId/files/:fileId', auth, async (req, res) =
 app.get('/api/stats', auth, async (req, res) => {
   try {
     const now = new Date(); const tm = now.getMonth()+1; const ty = now.getFullYear();
-    const [bRes, mRes, doneRes] = await Promise.all([
-      pool.query('SELECT COUNT(*) FROM buildings'),
-      pool.query('SELECT COUNT(*) FROM maintenances'),
-      pool.query('SELECT COUNT(*) FROM monthly_records WHERE year=$1 AND month=$2 AND done=true',[ty,tm])
-    ]);
-    const { rows: pendRows } = await pool.query(
-      `SELECT COUNT(*) FROM maintenances m
-       WHERE NOT EXISTS (SELECT 1 FROM monthly_records r WHERE r.maintenance_id=m.id AND r.year=$1 AND r.month=$2 AND r.done=true)`,
-      [ty, tm]
-    );
+    const bRes = await pool.query('SELECT COUNT(*) FROM buildings');
+    const mRes = await pool.query('SELECT COUNT(*) FROM maintenances');
+    let doneThisMonth = 0, pending = parseInt(mRes.rows[0].count);
+    try {
+      const doneRes = await pool.query(
+        'SELECT COUNT(*) FROM monthly_records WHERE year=$1 AND month=$2 AND done=true',[ty,tm]
+      );
+      doneThisMonth = parseInt(doneRes.rows[0].count);
+      const pendRows = await pool.query(
+        `SELECT COUNT(*) FROM maintenances m
+         WHERE NOT EXISTS (SELECT 1 FROM monthly_records r
+           WHERE r.maintenance_id=m.id AND r.year=$1 AND r.month=$2 AND r.done=true)`,
+        [ty, tm]
+      );
+      pending = parseInt(pendRows.rows[0].count);
+    } catch(e2) { /* monthly_records table may not exist yet */ }
     res.json({
-      buildings: parseInt(bRes.rows[0].count), total: parseInt(mRes.rows[0].count),
-      doneThisMonth: parseInt(doneRes.rows[0].count), pending: parseInt(pendRows.rows[0].count)
+      buildings: parseInt(bRes.rows[0].count),
+      total: parseInt(mRes.rows[0].count),
+      doneThisMonth,
+      pending
     });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
