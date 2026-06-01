@@ -160,6 +160,9 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .cl-pend{color:#0891b2}            /* cyan — programado futuro */
 .cl-vig{color:#059669;font-size:10px;font-weight:700} /* VIG verde */
 .cl-empty{color:#cbd5e1;font-size:10px} /* gris — sin registro */
+.td-no{background:rgba(244,63,94,.04)}
+.td-overdue{background:rgba(244,63,94,.08)}
+.td-overdue:hover{background:rgba(244,63,94,.14) !important}
 /* Columna eliminar */
 .td-del{width:28px;text-align:center;padding:0 6px;border-right:none}
 .del-btn{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s}
@@ -684,14 +687,24 @@ async function renderDashboard(){
         var bldg=null; for(var i=0;i<allBuildings.length;i++){ if(String(allBuildings[i].id)===bid){ bldg=allBuildings[i]; break; } }
         html+='<div style="background:#fff;border:1px solid var(--bdr);border-radius:11px;padding:14px">';
         html+='<div style="font-size:12px;font-weight:700;margin-bottom:9px;font-family:Syne,sans-serif;cursor:pointer;color:var(--teal)" data-bid="'+bid+'">'+(bldg?esc(bldg.name):"Edificio")+'</div>';
-        grouped[bid].forEach(function(m){
+        // Ordenar: vencidos primero
+        var sortedM = grouped[bid].slice().sort(function(a,b){
+          var aNd=a.nextDate?new Date(a.nextDate+"T00:00:00"):null;
+          var bNd=b.nextDate?new Date(b.nextDate+"T00:00:00"):null;
+          var aOv=aNd&&aNd<now; var bOv=bNd&&bNd<now;
+          if(aOv&&!bOv) return -1; if(!aOv&&bOv) return 1; return 0;
+        });
+        sortedM.forEach(function(m){
           var nd=m.nextDate?new Date(m.nextDate+"T00:00:00"):null;
-          var col=nd&&nd<now?"var(--danger)":"var(--warn)";
-          var lbl=nd?(nd<now?"Vencido: "+fmtDate(m.nextDate):"Prog: "+fmtDate(m.nextDate)):"Sin fecha";
-          html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f8fafc">'+
-            '<div style="width:5px;height:5px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
-            '<span style="flex:1;font-size:12px;font-weight:500">'+esc(m.type)+'</span>'+
-            '<span style="font-size:11px;font-weight:700;color:'+col+'">'+lbl+'</span></div>';
+          var isVencido=nd&&nd<now;
+          var col=isVencido?"var(--danger)":"var(--warn)";
+          var bgCol=isVencido?"rgba(244,63,94,.06)":"transparent";
+          var icon=isVencido?"⚠ ":"";
+          var lbl=nd?(isVencido?"Vencido "+fmtDate(m.nextDate):"Prog. "+fmtDate(m.nextDate)):"Sin fecha programada";
+          html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 6px;border-top:1px solid #f8fafc;border-radius:6px;background:'+bgCol+'">'+
+            '<div style="width:6px;height:6px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
+            '<span style="flex:1;font-size:12px;font-weight:'+(isVencido?"700":"500")+'">'+esc(m.type)+'</span>'+
+            '<span style="font-size:11px;font-weight:700;color:'+col+'">'+icon+lbl+'</span></div>';
         });
         html+='</div>';
       });
@@ -775,10 +788,9 @@ function renderCrono(){
       var cls="td-month"+(isFuture?" future":"");
 
       if(rec&&rec.done){
-        // Realizado — muestra la etiqueta o el día de la fecha
+        // REALIZADO — muestra etiqueta o día de la fecha en azul
         var lbl = rec.label || fmtDay(rec.doneDate);
         if(!lbl && rec.doneDate){ var pp=rec.doneDate.split("-"); lbl=pp[2]; }
-        // Si tiene etiqueta multi-linea (como "28\nENE") o simple
         if(lbl && lbl.includes("\n")){
           var parts=lbl.split("\n");
           cellContent='<span class="cell-label cl-done-multi">'+parts[0]+'<br>'+parts[1]+'</span>';
@@ -788,21 +800,32 @@ function renderCrono(){
           cellContent='<span class="cell-label cl-done">'+esc(lbl)+'</span>';
         }
       } else if(rec&&!rec.done){
-        // No realizado
-        cellContent='<span class="cell-label cl-no">✕</span>';
+        // MARCADO NO REALIZADO — rojo con ✕ y próxima fecha si la hay
+        var noLbl="✕";
+        if(m.nextDate){ var ppNo=m.nextDate.split("-"); noLbl="✕<br><span style='font-size:8px'>"+ppNo[2]+"/"+ppNo[1]+"</span>"; }
+        cls+=" td-no";
+        cellContent='<span class="cell-label cl-no" style="line-height:1.3">'+noLbl+'</span>';
       } else if(isFuture){
-        // Futuro — ver si hay fecha programada en ese mes
+        // FUTURO — mostrar la próxima fecha programada si corresponde a este mes
         if(m.nextDate){
-          var nd=new Date(m.nextDate+"T00:00:00");
-          if(nd.getFullYear()===calYear && nd.getMonth()+1===mo){
-            var lbl2=rec&&rec.label?rec.label:fmtDay(m.nextDate);
-            if(!lbl2){ var pp2=m.nextDate.split("-"); lbl2=pp2[2]; }
-            cellContent='<span class="cell-label cl-pend">'+esc(lbl2)+'</span>';
+          var ndF=new Date(m.nextDate+"T00:00:00");
+          if(ndF.getFullYear()===calYear && ndF.getMonth()+1===mo){
+            var pp2=m.nextDate.split("-");
+            cellContent='<span class="cell-label cl-pend">'+pp2[2]+'<br><span style="font-size:8px">'+MONTHS_S[mo-1]+'</span></span>';
+          }
+        }
+      } else {
+        // PASADO SIN REGISTRO — rojo claro con la fecha programada si la tenía
+        // Solo marcar en rojo si había una próxima fecha programada en ese mes
+        if(m.nextDate){
+          var ndP=new Date(m.nextDate+"T00:00:00");
+          if(ndP.getFullYear()===calYear && ndP.getMonth()+1===mo){
+            var pp3=m.nextDate.split("-");
+            cls+=" td-overdue";
+            cellContent='<span class="cell-label cl-no" title="Vencido sin registrar">'+pp3[2]+'<br><span style="font-size:8px">VENC.</span></span>';
           }
         }
       }
-      // Celda vacía pasada/actual → click para registrar
-      if(!cellContent && !isFuture) cellContent='';
 
       var attrs = !isFuture ? ' data-mid="'+m.id+'" data-year="'+calYear+'" data-month="'+mo+'"' : '';
       rows+='<td class="'+cls+'"'+attrs+'>'+cellContent+'</td>';
@@ -992,14 +1015,28 @@ function renderNotifications(maints,bldgs){
   var badge=document.getElementById("n-badge"); badge.textContent=pending.length; badge.classList.toggle("on",pending.length>0);
   document.getElementById("n-month").textContent=MONTHS[tm]+" "+ty;
   var html="";
-  pending.forEach(function(m){
-    var b=getBldg(m.buildingId);
-    var nd=m.nextDate?new Date(m.nextDate+"T00:00:00"):null;
-    var isOv=nd&&nd<now;
-    html+='<div class="npi" data-bid="'+m.buildingId+'"><div class="ndot '+(isOv?"r":"a")+'"></div>'+
-      '<div class="ntxt"><strong>'+esc(m.type)+'</strong><span>'+(b?esc(b.name):"")+'</span>'+
-      '<small>'+(isOv?"Vencido":nd?"Prog. "+fmtDate(m.nextDate):"Sin fecha")+'</small></div></div>';
-  });
+  // Ordenar: vencidos primero en notificaciones
+  var vencidos=pending.filter(function(m){ var nd=m.nextDate?new Date(m.nextDate+"T00:00:00"):null; return nd&&nd<now; });
+  var proximos=pending.filter(function(m){ var nd=m.nextDate?new Date(m.nextDate+"T00:00:00"):null; return !nd||nd>=now; });
+  if(vencidos.length){
+    html+='<div style="padding:6px 14px;font-size:9px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;background:#fff1f2">⚠ Vencidos sin registrar</div>';
+    vencidos.forEach(function(m){
+      var b=getBldg(m.buildingId);
+      html+='<div class="npi" data-bid="'+m.buildingId+'"><div class="ndot r"></div>'+
+        '<div class="ntxt"><strong>'+esc(m.type)+'</strong><span>'+(b?esc(b.name):"")+'</span>'+
+        '<small>Vencido: '+fmtDate(m.nextDate)+'</small></div></div>';
+    });
+  }
+  if(proximos.length){
+    html+='<div style="padding:6px 14px;font-size:9px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:1px;background:#fefce8">Pendientes este mes</div>';
+    proximos.forEach(function(m){
+      var b=getBldg(m.buildingId);
+      var nd=m.nextDate?new Date(m.nextDate+"T00:00:00"):null;
+      html+='<div class="npi" data-bid="'+m.buildingId+'"><div class="ndot a"></div>'+
+        '<div class="ntxt"><strong>'+esc(m.type)+'</strong><span>'+(b?esc(b.name):"")+'</span>'+
+        '<small>'+(nd?"Prog. "+fmtDate(m.nextDate):"Sin fecha programada")+'</small></div></div>';
+    });
+  }
   var body=document.getElementById("n-body");
   body.innerHTML=html||'<div class="nempty">¡Todo al día este mes! ✓</div>';
   body.querySelectorAll(".npi").forEach(function(el){
