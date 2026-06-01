@@ -561,6 +561,26 @@ function showLoad(v){ document.getElementById("loading").classList.toggle("on",v
 function openMo(id){ document.getElementById(id).classList.add("on"); }
 function closeMo(id){ document.getElementById(id).classList.remove("on"); }
 
+// Calcula la próxima fecha según periodicidad a partir de una fecha de realización
+function calcNextDate(doneDate, periodicidad){
+  if(!doneDate||!periodicidad) return null;
+  var p = periodicidad.toUpperCase().trim();
+  var d = new Date(doneDate+"T00:00:00");
+  var months = 0;
+  if(p==="MENSUAL")       months=1;
+  else if(p==="BIMESTRAL")months=2;
+  else if(p==="TRIMESTRAL")months=3;
+  else if(p==="SEMESTRAL") months=6;
+  else if(p==="ANUAL")     months=12;
+  else if(p==="TRIENAL")   months=36;
+  else return null; // OTRO u otras periodicidades no las calculamos automáticamente
+  d.setMonth(d.getMonth()+months);
+  var y=d.getFullYear();
+  var mo=String(d.getMonth()+1).padStart(2,"0");
+  var dy=String(d.getDate()).padStart(2,"0");
+  return y+"-"+mo+"-"+dy;
+}
+
 function getRecord(maint,year,month){
   if(!maint.records) return null;
   for(var i=0;i<maint.records.length;i++){
@@ -676,11 +696,14 @@ async function renderDashboard(){
     allBuildings=await api("GET","/api/buildings");
     allMaints=await api("GET","/api/maintenances");
     var now=new Date(); var tm=now.getMonth(); var ty=now.getFullYear(); var tmN=tm+1;
+    // Calcular realizados y pendientes directamente desde los datos cargados
+    var doneThisMonthReal = allMaints.filter(function(m){ var r=getRecord(m,ty,tmN); return r&&r.done; }).length;
+    var pendingReal = allMaints.filter(function(m){ var r=getRecord(m,ty,tmN); return !r||!r.done; }).length;
     document.getElementById("stat-grid").innerHTML=
       sc("si-t",icoB(),stats.buildings||0,"Copropiedades")+
       sc("si-o",icoC(),stats.total||0,"Equipos Registrados")+
-      sc("si-w",icoW(),stats.doneThisMonth||0,"Realizados Este Mes")+
-      sc("si-d",icoA(),stats.pending||0,"Pendientes Este Mes");
+      sc("si-w",icoW(),doneThisMonthReal,"Realizados Este Mes")+
+      sc("si-d",icoA(),pendingReal,"Pendientes Este Mes");
     document.getElementById("dash-month-lbl").textContent="Pendientes — "+MONTHS[tm]+" "+ty;
     // Pendientes = sin registro done=true + los marcados explícitamente como "no realizado"
     var pendientes=allMaints.filter(function(m){ var r=getRecord(m,ty,tmN); return !r||!r.done; });
@@ -942,6 +965,45 @@ async function saveRecord(){
     if(f2) fd.append("file2",f2);
     if(f3) fd.append("file3",f3);
     await api("POST","/api/monthly-records",fd,true);
+
+    // ── AUTO-PROGRAMAR PRÓXIMO SEGÚN PERIODICIDAD ──────────────────────────
+    if(done && doneDate){
+      // Buscar el equipo para obtener su periodicidad
+      var maint=null;
+      for(var i=0;i<allMaints.length;i++){ if(String(allMaints[i].id)===String(recordCtx.maintId)){ maint=allMaints[i]; break; } }
+      if(maint && maint.periodicidad){
+        var calculatedNext = calcNextDate(doneDate, maint.periodicidad);
+        if(calculatedNext){
+          // Actualizar el nextDate del equipo en el servidor
+          await api("POST","/api/maintenances",{
+            buildingId: maint.buildingId,
+            type: maint.type,
+            code: maint.code||"",
+            provider: maint.provider||"",
+            periodicidad: maint.periodicidad,
+            valor: maint.valor||"",
+            nextDate: calculatedNext,
+            report: maint.report||""
+          });
+          // Crear registro "programado" en el mes de la próxima fecha
+          var npParts = calculatedNext.split("-");
+          var npYear = parseInt(npParts[0]);
+          var npMonth = parseInt(npParts[1]);
+          var fdNext = new FormData();
+          fdNext.append("maintenanceId", recordCtx.maintId);
+          fdNext.append("year", npYear);
+          fdNext.append("month", npMonth);
+          fdNext.append("done", "false");
+          fdNext.append("doneDate", "");
+          fdNext.append("label", "");
+          fdNext.append("nextDate", calculatedNext);
+          fdNext.append("report", "Próximo mantenimiento programado para el " + fmtDate(calculatedNext) + " según periodicidad " + maint.periodicidad);
+          await api("POST","/api/monthly-records",fdNext,true);
+        }
+      }
+    }
+    // ── FIN AUTO-PROGRAMAR ─────────────────────────────────────────────────
+
     closeMo("mo-record");
     toast("Registro guardado","ok");
     loadDetail();
