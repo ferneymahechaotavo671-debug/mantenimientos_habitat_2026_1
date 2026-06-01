@@ -470,6 +470,12 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
           <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
           <strong id="mr-l2">Click para subir certificado</strong><p>PDF, JPG o PNG • máx 8MB</p></div>
       </div>
+      <div class="fg">
+        <label class="fl">Documento Adicional</label>
+        <div class="upzone" id="mr-z3"><input type="file" id="mr-f3" accept=".pdf,.jpg,.jpeg,.png">
+          <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <strong id="mr-l3">Click para subir documento adicional</strong><p>PDF, JPG o PNG • máx 8MB</p></div>
+      </div>
       <div id="mr-existing-files" style="display:none;margin-top:8px">
         <label class="fl">Archivos guardados</label>
         <div id="mr-files-list" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
@@ -676,7 +682,16 @@ async function renderDashboard(){
       sc("si-w",icoW(),stats.doneThisMonth||0,"Realizados Este Mes")+
       sc("si-d",icoA(),stats.pending||0,"Pendientes Este Mes");
     document.getElementById("dash-month-lbl").textContent="Pendientes — "+MONTHS[tm]+" "+ty;
+    // Pendientes = sin registro done=true + los marcados explícitamente como "no realizado"
     var pendientes=allMaints.filter(function(m){ var r=getRecord(m,ty,tmN); return !r||!r.done; });
+    // Separar vencidos (tienen nextDate pasado) de programados
+    pendientes.sort(function(a,b){
+      var aNd=a.nextDate?new Date(a.nextDate+"T00:00:00"):null;
+      var bNd=b.nextDate?new Date(b.nextDate+"T00:00:00"):null;
+      var aV=aNd&&aNd<now; var bV=bNd&&bNd<now;
+      if(aV&&!bV) return -1; if(!aV&&bV) return 1;
+      if(aNd&&bNd) return aNd-bNd; return 0;
+    });
     if(!pendientes.length){
       document.getElementById("dash-month").innerHTML='<div class="empty-st">'+icoC()+'<p>¡Todos los mantenimientos están al día!</p></div>';
     } else {
@@ -701,9 +716,11 @@ async function renderDashboard(){
           var bgCol=isVencido?"rgba(244,63,94,.06)":"transparent";
           var icon=isVencido?"⚠ ":"";
           var lbl=nd?(isVencido?"Vencido "+fmtDate(m.nextDate):"Prog. "+fmtDate(m.nextDate)):"Sin fecha programada";
+          var rec2=getRecord(m,ty,tmN);
+          var marcadoNo=rec2&&!rec2.done;
           html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 6px;border-top:1px solid #f8fafc;border-radius:6px;background:'+bgCol+'">'+
             '<div style="width:6px;height:6px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
-            '<span style="flex:1;font-size:12px;font-weight:'+(isVencido?"700":"500")+'">'+esc(m.type)+'</span>'+
+            '<span style="flex:1;font-size:12px;font-weight:'+(isVencido?"700":"500")+'">'+esc(m.type)+(marcadoNo?' <span style="font-size:10px;color:var(--danger)">(No realizado)</span>':'')+'</span>'+
             '<span style="font-size:11px;font-weight:700;color:'+col+'">'+icon+lbl+'</span></div>';
         });
         html+='</div>';
@@ -787,8 +804,14 @@ function renderCrono(){
       var cellContent="";
       var cls="td-month"+(isFuture?" future":"");
 
+      // Buscar la fecha "próxima" más relevante:
+      // 1) Si hay registro en este mes con nextDate → esa es la próxima guardada
+      // 2) Si no, usar el nextDate del equipo (m.nextDate)
+      // nextDateRef: la fecha que representa "la próxima para este equipo"
+      var nextDateRef = (rec && rec.nextDate) ? rec.nextDate : m.nextDate;
+
       if(rec&&rec.done){
-        // REALIZADO — muestra etiqueta o día de la fecha en azul
+        // REALIZADO — día en azul
         var lbl = rec.label || fmtDay(rec.doneDate);
         if(!lbl && rec.doneDate){ var pp=rec.doneDate.split("-"); lbl=pp[2]; }
         if(lbl && lbl.includes("\n")){
@@ -800,27 +823,27 @@ function renderCrono(){
           cellContent='<span class="cell-label cl-done">'+esc(lbl)+'</span>';
         }
       } else if(rec&&!rec.done){
-        // MARCADO NO REALIZADO — rojo con ✕ y próxima fecha si la hay
+        // MARCADO NO REALIZADO — rojo con ✕
         var noLbl="✕";
-        if(m.nextDate){ var ppNo=m.nextDate.split("-"); noLbl="✕<br><span style='font-size:8px'>"+ppNo[2]+"/"+ppNo[1]+"</span>"; }
+        if(nextDateRef){ var ppNo=nextDateRef.split("-"); noLbl="✕<br><span style='font-size:8px'>"+ppNo[2]+"/"+ppNo[1]+"</span>"; }
         cls+=" td-no";
         cellContent='<span class="cell-label cl-no" style="line-height:1.3">'+noLbl+'</span>';
       } else if(isFuture){
-        // FUTURO — mostrar la próxima fecha programada si corresponde a este mes
-        if(m.nextDate){
-          var ndF=new Date(m.nextDate+"T00:00:00");
+        // FUTURO — mostrar próxima fecha si corresponde a ESTE mes
+        // Usa nextDateRef que puede ser la del registro previo O la del equipo
+        if(nextDateRef){
+          var ndF=new Date(nextDateRef+"T00:00:00");
           if(ndF.getFullYear()===calYear && ndF.getMonth()+1===mo){
-            var pp2=m.nextDate.split("-");
-            cellContent='<span class="cell-label cl-pend">'+pp2[2]+'<br><span style="font-size:8px">'+MONTHS_S[mo-1]+'</span></span>';
+            var pp2=nextDateRef.split("-");
+            cellContent='<span class="cell-label cl-pend" title="Próximo: '+fmtDate(nextDateRef)+'">'+pp2[2]+'<br><span style="font-size:8px">'+MONTHS_S[mo-1]+'</span></span>';
           }
         }
       } else {
-        // PASADO SIN REGISTRO — rojo claro con la fecha programada si la tenía
-        // Solo marcar en rojo si había una próxima fecha programada en ese mes
-        if(m.nextDate){
-          var ndP=new Date(m.nextDate+"T00:00:00");
+        // PASADO SIN REGISTRO — marcar en rojo si tenía fecha en ese mes
+        if(nextDateRef){
+          var ndP=new Date(nextDateRef+"T00:00:00");
           if(ndP.getFullYear()===calYear && ndP.getMonth()+1===mo){
-            var pp3=m.nextDate.split("-");
+            var pp3=nextDateRef.split("-");
             cls+=" td-overdue";
             cellContent='<span class="cell-label cl-no" title="Vencido sin registrar">'+pp3[2]+'<br><span style="font-size:8px">VENC.</span></span>';
           }
@@ -867,9 +890,10 @@ function openRecordModal(maintId,year,month){
   var rec=recordCtx.existingRecord;
   document.getElementById("mr-title").textContent=esc(m.type);
   document.getElementById("mr-sub").textContent=MONTHS[month-1]+" "+year+" — "+(currentBuilding?esc(currentBuilding.name):"");
-  ["mr-f1","mr-f2"].forEach(function(id){ document.getElementById(id).value=""; });
+  ["mr-f1","mr-f2","mr-f3"].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=""; });
   document.getElementById("mr-l1").textContent="Click para subir informe";
   document.getElementById("mr-l2").textContent="Click para subir certificado";
+  var l3=document.getElementById("mr-l3"); if(l3) l3.textContent="Click para subir documento adicional";
   var done=rec&&rec.done;
   document.getElementById("mr-done").checked=done;
   document.getElementById("mr-done-fields").style.display=done?"block":"none";
@@ -913,8 +937,10 @@ async function saveRecord(){
     fd.append("report",report);
     var f1=document.getElementById("mr-f1").files[0];
     var f2=document.getElementById("mr-f2").files[0];
+    var f3el=document.getElementById("mr-f3"); var f3=f3el?f3el.files[0]:null;
     if(f1) fd.append("file1",f1);
     if(f2) fd.append("file2",f2);
+    if(f3) fd.append("file3",f3);
     await api("POST","/api/monthly-records",fd,true);
     closeMo("mo-record");
     toast("Registro guardado","ok");
@@ -1137,9 +1163,11 @@ document.addEventListener("DOMContentLoaded",function(){
   document.addEventListener("click",function(e){
     if(e.target.closest("#mr-z1")&&!e.target.closest("input")) document.getElementById("mr-f1").click();
     if(e.target.closest("#mr-z2")&&!e.target.closest("input")) document.getElementById("mr-f2").click();
+    if(e.target.closest("#mr-z3")&&!e.target.closest("input")){ var z3el=document.getElementById("mr-f3"); if(z3el) z3el.click(); }
   });
-  ["mr-f1","mr-f2"].forEach(function(id,i){
-    document.getElementById(id).addEventListener("change",function(){ if(this.files[0]) document.getElementById("mr-l"+(i+1)).textContent=this.files[0].name; });
+  ["mr-f1","mr-f2","mr-f3"].forEach(function(id,i){
+    var el=document.getElementById(id);
+    if(el) el.addEventListener("change",function(){ if(this.files[0]) { var lEl=document.getElementById("mr-l"+(i+1)); if(lEl) lEl.textContent=this.files[0].name; } });
   });
   // Notifications
   document.getElementById("n-btn").addEventListener("click",function(e){ e.stopPropagation(); document.getElementById("n-panel").classList.toggle("on"); });
