@@ -65,7 +65,8 @@ async function initDB() {
         id SERIAL PRIMARY KEY,
         building_id INTEGER REFERENCES buildings(id) ON DELETE CASCADE,
         type TEXT NOT NULL,
-        code TEXT DEFAULT '',
+        contacto TEXT DEFAULT '',
+        celular TEXT DEFAULT '',
         provider TEXT DEFAULT '',
         periodicidad TEXT DEFAULT '',
         valor TEXT DEFAULT '',
@@ -80,7 +81,7 @@ async function initDB() {
       )`);
 
     // Add columns if upgrading from older version
-    const cols = ['periodicidad','valor','sort_order'];
+    const cols = ['periodicidad','valor','sort_order','contacto','celular'];
     for (const col of cols) {
       try {
         if (col === 'sort_order') {
@@ -201,7 +202,7 @@ app.delete('/api/buildings/:id', auth, adminOnly, async (req, res) => {
 function fmtM(m, records) {
   return {
     id: m.id, buildingId: String(m.building_id),
-    type: m.type, code: m.code||'',
+    type: m.type, contacto: m.contacto||'', celular: m.celular||'',
     provider: m.provider||'', periodicidad: m.periodicidad||'',
     valor: m.valor||'', nextDate: m.next_date||'',
     report: m.report||'', sortOrder: m.sort_order||0,
@@ -248,7 +249,7 @@ app.get('/api/maintenances', auth, async (req, res) => {
 
 app.post('/api/maintenances', auth, async (req, res) => {
   try {
-    const { buildingId, type, code, provider, periodicidad, valor, nextDate, report } = req.body;
+    const { buildingId, type, contacto, celular, provider, periodicidad, valor, nextDate, report } = req.body;
     if (!buildingId||!type) return res.status(400).json({ error: 'Edificio y tipo son obligatorios' });
 
     const { rows: existing } = await pool.query(
@@ -264,16 +265,16 @@ app.post('/api/maintenances', auth, async (req, res) => {
     let maint;
     if (existing.length > 0) {
       const { rows } = await pool.query(
-        `UPDATE maintenances SET code=$1,provider=$2,periodicidad=$3,valor=$4,next_date=$5,report=$6,
-         updated_at=NOW(),updated_by=$7 WHERE id=$8 RETURNING *`,
-        [code||'', provider||'', periodicidad||'', valor||'', nextDate||'', report||'', req.user.name, existing[0].id]
+        `UPDATE maintenances SET contacto=$1,celular=$2,provider=$3,periodicidad=$4,valor=$5,next_date=$6,report=$7,
+         updated_at=NOW(),updated_by=$8 WHERE id=$9 RETURNING *`,
+        [contacto||'', celular||'', provider||'', periodicidad||'', valor||'', nextDate||'', report||'', req.user.name, existing[0].id]
       );
       maint = rows[0];
     } else {
       const { rows } = await pool.query(
-        `INSERT INTO maintenances (building_id,type,code,provider,periodicidad,valor,next_date,report,sort_order,created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-        [buildingId, type, code||'', provider||'', periodicidad||'', valor||'', nextDate||'', report||'', nextOrder, req.user.name]
+        `INSERT INTO maintenances (building_id,type,contacto,celular,provider,periodicidad,valor,next_date,report,sort_order,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+        [buildingId, type, contacto||'', celular||'', provider||'', periodicidad||'', valor||'', nextDate||'', report||'', nextOrder, req.user.name]
       );
       maint = rows[0];
     }

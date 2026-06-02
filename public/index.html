@@ -160,6 +160,11 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .cl-pend{color:#0891b2}            /* cyan — programado futuro */
 .cl-vig{color:#059669;font-size:10px;font-weight:700} /* VIG verde */
 .cl-empty{color:#cbd5e1;font-size:10px} /* gris — sin registro */
+.td-edit{cursor:text;transition:background .15s}
+.td-edit:hover{background:rgba(13,148,136,.06)}
+.td-edit:focus{outline:2px solid var(--teal);outline-offset:-2px;background:rgba(13,148,136,.04)}
+.td-select{border:none;background:transparent;font-size:11px;color:var(--mu);font-family:inherit;cursor:pointer;width:100%;padding:2px 0}
+.td-select:focus{outline:none}
 .td-no{background:rgba(244,63,94,.04)}
 .td-overdue{background:rgba(244,63,94,.08)}
 .td-overdue:hover{background:rgba(244,63,94,.14) !important}
@@ -431,7 +436,8 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
             <option>SEMESTRAL</option><option>ANUAL</option><option>TRIENAL</option><option>OTRO</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">Código</label><input type="text" class="fi" id="m-code" placeholder="Ej: ASC-001"></div>
+        <div class="fg"><label class="fl">Contacto</label><input type="text" class="fi" id="m-contacto" placeholder="Nombre del contacto"></div>
+        <div class="fg"><label class="fl">Celular</label><input type="text" class="fi" id="m-celular" placeholder="Ej: 300 123 4567"></div>
         <div class="fg"><label class="fl">Valor ($)</label><input type="text" class="fi" id="m-valor" placeholder="Ej: 450000"></div>
         <div class="fg ffull"><label class="fl fl-r">Próxima Fecha Programada</label><input type="date" class="fi" id="m-next" style="border-color:#fecdd3"></div>
       </div>
@@ -802,6 +808,36 @@ async function loadDetail(){
 }
 
 // ── RENDER CRONOGRAMA (tabla como en la imagen) ───────────────────────────────
+// Guarda un campo editado inline en la tabla
+async function saveInlineField(mid, field, value){
+  var m=null;
+  for(var i=0;i<allMaints.length;i++){ if(String(allMaints[i].id)===String(mid)){ m=allMaints[i]; break; } }
+  if(!m) return;
+  // Construir el objeto con todos los campos actuales + el campo modificado
+  var updated={
+    buildingId: m.buildingId,
+    type: field==="type"?value:m.type,
+    contacto: field==="contacto"?value:(m.contacto||""),
+    celular: field==="celular"?value:(m.celular||""),
+    provider: field==="provider"?value:(m.provider||""),
+    periodicidad: field==="periodicidad"?value:(m.periodicidad||""),
+    valor: field==="valor"?value:(m.valor||""),
+    nextDate: m.nextDate||"",
+    report: m.report||""
+  };
+  try{
+    await api("POST","/api/maintenances",updated);
+    // Actualizar allMaints local para que el calendario no se desincronice
+    for(var j=0;j<allMaints.length;j++){
+      if(String(allMaints[j].id)===String(mid)){
+        allMaints[j][field]=value;
+        break;
+      }
+    }
+    toast("Guardado","ok");
+  } catch(e){ toast(e.message,"err"); loadDetail(); }
+}
+
 function renderCrono(){
   document.getElementById("cal-year").textContent=calYear;
   document.getElementById("crono-footer-label").textContent="Cronograma "+calYear+" — "+esc(currentBuilding?currentBuilding.name:"");
@@ -816,10 +852,22 @@ function renderCrono(){
   var rows="";
   allMaints.forEach(function(m){
     rows+='<tr>';
-    rows+='<td class="td-equipo">'+esc(m.type)+'</td>';
-    rows+='<td class="td-provider">'+esc(m.provider||"—")+'</td>';
-    rows+='<td class="td-period">'+esc(m.periodicidad||"—")+'</td>';
-    rows+='<td class="td-valor">'+(m.valor?'$ '+esc(m.valor):"—")+'</td>';
+    // Celdas editables solo para admin
+    var isAdmin=(currentUser&&currentUser.role==="admin");
+    if(isAdmin){
+      rows+='<td class="td-equipo td-edit" contenteditable="true" data-field="type" data-mid="'+m.id+'" title="Click para editar">'+esc(m.type)+'</td>';
+      rows+='<td class="td-provider td-edit" contenteditable="true" data-field="provider" data-mid="'+m.id+'" title="Click para editar">'+esc(m.provider||"")+'</td>';
+      rows+='<td class="td-period td-edit" contenteditable="false" data-field="periodicidad" data-mid="'+m.id+'">'+
+        '<select class="td-select" data-field="periodicidad" data-mid="'+m.id+'">'+
+          ['','MENSUAL','BIMESTRAL','TRIMESTRAL','SEMESTRAL','ANUAL','TRIENAL','OTRO'].map(function(o){ return '<option value="'+o+'"'+(m.periodicidad===o?' selected':'')+'>'+( o||'—')+'</option>'; }).join('')+
+        '</select></td>';
+      rows+='<td class="td-valor td-edit" contenteditable="true" data-field="valor" data-mid="'+m.id+'" title="Click para editar">'+esc(m.valor||"")+'</td>';
+    } else {
+      rows+='<td class="td-equipo">'+esc(m.type)+'</td>';
+      rows+='<td class="td-provider">'+esc(m.provider||"—")+'</td>';
+      rows+='<td class="td-period">'+esc(m.periodicidad||"—")+'</td>';
+      rows+='<td class="td-valor">'+(m.valor?'$ '+esc(m.valor):"—")+'</td>';
+    }
 
     for(var mo=1;mo<=12;mo++){
       var isFuture = calYear>nowYear || (calYear===nowYear && mo>nowMonth);
@@ -883,6 +931,31 @@ function renderCrono(){
   });
 
   tbody.innerHTML=rows;
+
+  // ── EDICIÓN INLINE (solo admin) ────────────────────────────────────────────
+  if(currentUser && currentUser.role==="admin"){
+    // contenteditable: guardar al perder foco (blur)
+    tbody.querySelectorAll(".td-edit[contenteditable='true']").forEach(function(td){
+      td.addEventListener("blur", function(){
+        var mid = this.getAttribute("data-mid");
+        var field = this.getAttribute("data-field");
+        var val = this.textContent.trim();
+        saveInlineField(mid, field, val);
+      });
+      // Evitar salto de línea con Enter — guardar y salir
+      td.addEventListener("keydown", function(e){
+        if(e.key==="Enter"){ e.preventDefault(); this.blur(); }
+        if(e.key==="Escape"){ this.blur(); }
+      });
+    });
+    // select de periodicidad: guardar al cambiar
+    tbody.querySelectorAll(".td-select").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var mid = this.getAttribute("data-mid");
+        saveInlineField(mid, "periodicidad", this.value);
+      });
+    });
+  }
 
   // Click en celdas de mes (no futuras)
   tbody.querySelectorAll(".td-month:not(.future)").forEach(function(td){
@@ -1018,7 +1091,7 @@ function openAddMaint(){
   var sel=document.getElementById("m-type"); sel.disabled=false;
   sel.innerHTML='<option value="">-- Seleccione servicio --</option>'+
     SERVICIOS.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join("");
-  ["m-provider","m-code","m-valor","m-report"].forEach(function(id){ document.getElementById(id).value=""; });
+  ["m-provider","m-contacto","m-celular","m-valor","m-report"].forEach(function(id){ document.getElementById(id).value=""; });
   document.getElementById("m-next").value="";
   document.getElementById("m-period").value="";
   openMo("mo-maint");
@@ -1027,14 +1100,15 @@ async function saveMaint(){
   var type=document.getElementById("m-type").value;
   var provider=document.getElementById("m-provider").value.trim();
   var periodicidad=document.getElementById("m-period").value;
-  var code=document.getElementById("m-code").value.trim();
+  var contacto=document.getElementById("m-contacto").value.trim();
+  var celular=document.getElementById("m-celular").value.trim();
   var valor=document.getElementById("m-valor").value.trim();
   var nextDate=document.getElementById("m-next").value;
   var report=document.getElementById("m-report").value.trim();
   if(!type){ toast("Seleccione el tipo de servicio","err"); return; }
   var btn=document.getElementById("mm-save"); btn.disabled=true; btn.textContent="Guardando...";
   try{
-    await api("POST","/api/maintenances",{buildingId:currentBuilding.id,type,code,provider,periodicidad,valor,nextDate,report});
+    await api("POST","/api/maintenances",{buildingId:currentBuilding.id,type,contacto,celular,provider,periodicidad,valor,nextDate,report});
     document.getElementById("m-type").disabled=false;
     closeMo("mo-maint");
     toast("Equipo añadido","ok");
