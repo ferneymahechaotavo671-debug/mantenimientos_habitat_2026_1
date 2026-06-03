@@ -148,6 +148,8 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .crono-table td.td-provider{color:var(--mu);font-size:11px;min-width:130px}
 .crono-table td.td-period{color:var(--mu);font-size:11px;min-width:90px}
 .crono-table td.td-valor{text-align:right;font-size:11px;color:var(--mu);padding-right:10px;min-width:80px}
+.crono-table td.td-contact{color:var(--mu);font-size:11px;min-width:110px}
+.crono-table td.td-cel{color:var(--mu);font-size:11px;min-width:110px;white-space:nowrap}
 /* Celda del mes — clickeable */
 .crono-table td.td-month{text-align:center;min-width:52px;cursor:pointer;padding:6px 4px;position:relative}
 .crono-table td.td-month:hover{background:rgba(13,148,136,.07)}
@@ -398,6 +400,8 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
                   <th class="th-left">PROVEEDOR</th>
                   <th class="th-left">PERIODICIDAD</th>
                   <th class="th-valor">VALOR ($)</th>
+                  <th class="th-left">CONTACTO</th>
+                  <th class="th-left">CELULAR</th>
                   <th>ENE</th><th>FEB</th><th>MAR</th><th>ABR</th><th>MAY</th><th>JUN</th>
                   <th>JUL</th><th>AGO</th><th>SEP</th><th>OCT</th><th>NOV</th><th>DIC</th>
                   <th style="border-right:none;width:28px"></th>
@@ -880,7 +884,7 @@ function renderCrono(){
   var tbody=document.getElementById("crono-tbody");
 
   if(!allMaints.length){
-    tbody.innerHTML='<tr><td colspan="17" style="padding:32px;text-align:center;color:var(--mu);font-style:italic">Sin equipos registrados. Haga clic en "Añadir Nuevo Equipo".</td></tr>';
+    tbody.innerHTML='<tr><td colspan="19" style="padding:32px;text-align:center;color:var(--mu);font-style:italic">Sin equipos registrados. Haga clic en "Añadir Nuevo Equipo".</td></tr>';
     return;
   }
 
@@ -897,11 +901,15 @@ function renderCrono(){
           ['','MENSUAL','BIMESTRAL','TRIMESTRAL','SEMESTRAL','ANUAL','TRIENAL','OTRO'].map(function(o){ return '<option value="'+o+'"'+(m.periodicidad===o?' selected':'')+'>'+( o||'—')+'</option>'; }).join('')+
         '</select></td>';
       rows+='<td class="td-valor td-edit" contenteditable="true" data-field="valor" data-mid="'+m.id+'" title="Click para editar">'+esc(m.valor||"")+'</td>';
+      rows+='<td class="td-contact td-edit" contenteditable="true" data-field="contacto" data-mid="'+m.id+'" title="Click para editar">'+esc(m.contacto||"")+'</td>';
+      rows+='<td class="td-cel td-edit" contenteditable="true" data-field="celular" data-mid="'+m.id+'" title="Click para editar">'+esc(m.celular||"")+'</td>';
     } else {
       rows+='<td class="td-equipo">'+esc(m.type)+'</td>';
       rows+='<td class="td-provider">'+esc(m.provider||"—")+'</td>';
       rows+='<td class="td-period">'+esc(m.periodicidad||"—")+'</td>';
       rows+='<td class="td-valor">'+(m.valor?'$ '+esc(m.valor):"—")+'</td>';
+      rows+='<td class="td-contact">'+esc(m.contacto||"—")+'</td>';
+      rows+='<td class="td-cel">'+esc(m.celular||"—")+'</td>';
     }
 
     for(var mo=1;mo<=12;mo++){
@@ -1170,9 +1178,9 @@ async function saveMaint(){
 // ── EXCEL ──────────────────────────────────────────────────────────────────────
 function exportExcel(){
   if(!currentBuilding||!allMaints.length){ toast("No hay datos","err"); return; }
-  var rows=[["EQUIPO / SERVICIO","PROVEEDOR","PERIODICIDAD","VALOR ($)","ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"]];
+  var rows=[["EQUIPO / SERVICIO","PROVEEDOR","PERIODICIDAD","VALOR ($)","CONTACTO","CELULAR","ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"]];
   allMaints.forEach(function(m){
-    var row=[m.type,m.provider||"",m.periodicidad||"",m.valor||""];
+    var row=[m.type,m.provider||"",m.periodicidad||"",m.valor||"",m.contacto||"",m.celular||""];
     for(var mo=1;mo<=12;mo++){
       var rec=getRecord(m,calYear,mo);
       if(rec&&rec.done){ row.push(rec.label||fmtDay(rec.doneDate)||"✓"); }
@@ -1183,7 +1191,7 @@ function exportExcel(){
   });
   var wb=XLSX.utils.book_new();
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"]=[{wch:28},{wch:22},{wch:14},{wch:12},...Array(12).fill({wch:8})];
+  ws["!cols"]=[{wch:28},{wch:22},{wch:14},{wch:12},{wch:20},{wch:15},...Array(12).fill({wch:8})];
   XLSX.utils.book_append_sheet(wb,ws,"Cronograma "+calYear);
   var fname=currentBuilding.name.replace(/[^a-zA-Z0-9]/g,"_")+"_Cronograma_"+calYear+".xlsx";
   XLSX.writeFile(wb,fname);
@@ -1244,6 +1252,8 @@ function renderActasRows(actas, isAdmin){
     rows += '<td class="td-provider" style="font-size:11px;color:var(--mu)">'+esc(a.created_by||"")+'</td>';
     rows += '<td class="td-period" style="font-size:11px;color:var(--mu)">—</td>';
     rows += '<td class="td-valor">—</td>';
+    rows += '<td class="td-contact">—</td>';
+    rows += '<td class="td-cel">—</td>';
     // Month cells
     for(var mo=1;mo<=12;mo++){
       var cellHtml = "";
