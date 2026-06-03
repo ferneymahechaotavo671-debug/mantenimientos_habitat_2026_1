@@ -16,10 +16,10 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -112,6 +112,23 @@ async function initDB() {
 
     // Add label column if upgrading
     try { await client.query(`ALTER TABLE monthly_records ADD COLUMN IF NOT EXISTS label TEXT DEFAULT ''`); } catch(e) {}
+
+    // ── ACTAS TABLE ────────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS actas (
+        id SERIAL PRIMARY KEY,
+        building_id INTEGER REFERENCES buildings(id) ON DELETE CASCADE,
+        tipo TEXT NOT NULL DEFAULT 'Acta Consejo',
+        numero TEXT DEFAULT '',
+        fecha_envio TEXT DEFAULT '',
+        fecha_recibido TEXT DEFAULT '',
+        file_data TEXT DEFAULT '',
+        file_name TEXT DEFAULT '',
+        file_mime TEXT DEFAULT '',
+        created_by TEXT DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )`);
 
     // Seed usuarios
     const { rows: u } = await client.query('SELECT COUNT(*) FROM users');
@@ -357,6 +374,137 @@ app.get('/api/monthly-records/:recordId/files/:fileId', auth, async (req, res) =
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name)}"`);
     res.send(buf);
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── ACTAS ─────────────────────────────────────────────────────────────────────
+app.get('/api/actas', auth, async (req, res) => {
+  try {
+    const buildingId = req.query.buildingId;
+    let q = 'SELECT id,building_id,tipo,numero,fecha_envio,fecha_recibido,file_name,file_mime,created_by,created_at FROM actas';
+    const params = [];
+    if (buildingId) { q += ' WHERE building_id=$1'; params.push(parseInt(buildingId)); }
+    q += ' ORDER BY created_at ASC';
+    const { rows } = await pool.query(q, params);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/actas',
+  auth,
+  upload.single('file'),
+  async (req, res) => {
+    try {
+      const { buildingId, tipo, numero, fechaEnvio, fechaRecibido } = req.body;
+      if (!buildingId || !tipo) return res.status(400).json({ error: 'Faltan campos' });
+      let fileData = '', fileName = '', fileMime = '';
+      if (req.file) {
+        fileData = req.file.buffer.toString('base64');
+        fileName = req.file.originalname;
+        fileMime = req.file.mimetype;
+      }
+      const { rows } = await pool.query(
+        `INSERT INTO actas (building_id,tipo,numero,fecha_envio,fecha_recibido,file_data,file_name,file_mime,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,building_id,tipo,numero,fecha_envio,fecha_recibido,file_name,file_mime,created_by,created_at`,
+        [parseInt(buildingId), tipo, numero||'', fechaEnvio||'', fechaRecibido||'', fileData, fileName, fileMime, req.user.name]
+      );
+      res.json(rows[0]);
+    } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+  }
+);
+
+app.delete('/api/actas/:id', auth, adminOnly, async (req, res) => {
+  try { await pool.query('DELETE FROM actas WHERE id=$1', [req.params.id]); res.json({ ok: true }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/actas/:id/file', auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT file_data,file_name,file_mime FROM actas WHERE id=$1', [req.params.id]);
+    if (!rows[0] || !rows[0].file_data) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const buf = Buffer.from(rows[0].file_data, 'base64');
+    res.setHeader('Content-Type', rows[0].file_mime || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(rows[0].file_name)}"`);
+    res.send(buf);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── EXPORT DB ─────────────────────────────────────────────────────────────────
+app.get('/api/export-db', auth, adminOnly, async (req, res) => {
+  try {
+    const { rows: buildings } = await pool.query('SELECT * FROM buildings ORDER BY id');
+    const { rows: maintenances } = await pool.query('SELECT * FROM maintenances ORDER BY id');
+    const { rows: records } = await pool.query('SELECT * FROM monthly_records ORDER BY id');
+    const { rows: users } = await pool.query('SELECT id,name,username,role,created_at FROM users ORDER BY id');
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      version: '3.1',
+      buildings,
+      maintenances,
+      monthly_records: records,
+      users
+    };
+    res.setHeader('Content-Type', 'application/json');
+    res.json(exportData);
+  } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// ── IMPORT DB ─────────────────────────────────────────────────────────────────
+app.post('/api/import-db', auth, adminOnly, express.json({ limit: '50mb' }), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { buildings, maintenances, monthly_records } = req.body;
+    if (!buildings || !maintenances || !monthly_records) {
+      return res.status(400).json({ error: 'Formato de backup inválido' });
+    }
+    await client.query('BEGIN');
+
+    // Clear existing data (except users)
+    await client.query('DELETE FROM monthly_records');
+    await client.query('DELETE FROM maintenances');
+    await client.query('DELETE FROM buildings');
+
+    // Re-insert buildings
+    for (const b of buildings) {
+      await client.query(
+        'INSERT INTO buildings (id, name, address, created_at) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET name=$2, address=$3',
+        [b.id, b.name, b.address||'', b.created_at||new Date()]
+      );
+    }
+    // Sync sequence
+    await client.query(`SELECT setval('buildings_id_seq', COALESCE((SELECT MAX(id) FROM buildings), 1))`);
+
+    // Re-insert maintenances
+    for (const m of maintenances) {
+      await client.query(
+        `INSERT INTO maintenances (id, building_id, type, provider, periodicidad, valor, next_date, report, contacto, celular, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (id) DO UPDATE
+         SET building_id=$2,type=$3,provider=$4,periodicidad=$5,valor=$6,next_date=$7,report=$8,contacto=$9,celular=$10`,
+        [m.id, m.building_id, m.type||'', m.provider||'', m.periodicidad||'', m.valor||'',
+         m.next_date||null, m.report||'', m.contacto||'', m.celular||'',
+         m.created_at||new Date(), m.updated_at||new Date()]
+      );
+    }
+    await client.query(`SELECT setval('maintenances_id_seq', COALESCE((SELECT MAX(id) FROM maintenances), 1))`);
+
+    // Re-insert monthly_records
+    for (const r of monthly_records) {
+      await client.query(
+        `INSERT INTO monthly_records (id, maintenance_id, year, month, done, done_date, label, next_date, report, files, recorded_by, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13) ON CONFLICT (id) DO UPDATE
+         SET done=$5,done_date=$6,label=$7,next_date=$8,report=$9,files=$10::jsonb,recorded_by=$11`,
+        [r.id, r.maintenance_id, r.year, r.month, r.done||false, r.done_date||'', r.label||'',
+         r.next_date||'', r.report||'', JSON.stringify(r.files||[]), r.recorded_by||'',
+         r.created_at||new Date(), r.updated_at||new Date()]
+      );
+    }
+    await client.query(`SELECT setval('monthly_records_id_seq', COALESCE((SELECT MAX(id) FROM monthly_records), 1))`);
+
+    await client.query('COMMIT');
+    res.json({ ok: true, buildings: buildings.length, maintenances: maintenances.length, records: monthly_records.length });
+  } catch(e) {
+    await client.query('ROLLBACK');
+    console.error(e); res.status(500).json({ error: e.message });
+  } finally { client.release(); }
 });
 
 // ── STATS ─────────────────────────────────────────────────────────────────────

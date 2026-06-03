@@ -6,6 +6,7 @@
 <title>HABITAT INTEGRAL PH — Mantenimientos</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --teal:#0d9488;--td:#0f766e;--txd:#134e4a;--tl:#ccfbf1;--tg:#14b8a6;
@@ -178,6 +179,16 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .add-row-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--teal);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;padding:6px 0;transition:color .15s}
 .add-row-btn:hover{color:var(--td)}
 .add-row-btn svg{width:16px;height:16px}
+.add-acta-btn{color:#a78bfa!important}.add-acta-btn:hover{color:#7c3aed!important}
+.td-acta-tipo{font-size:11px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.12);padding:2px 7px;border-radius:5px;white-space:nowrap}
+.td-acta-num{font-size:11px;color:var(--mu)}
+.acta-row td{background:rgba(167,139,250,.04)!important}
+.acta-row td:first-child{border-left:3px solid #7c3aed}
+.acta-cell-date{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.acta-cell-date .acd-day{font-size:11px;font-weight:700;color:#a78bfa}
+.acta-cell-date .acd-lbl{font-size:8px;color:var(--mu)}
+.acta-file-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#a78bfa;background:rgba(167,139,250,.15);border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-family:inherit;font-weight:600}
+.acta-file-btn:hover{background:rgba(167,139,250,.3)}
 /* Wrapper con scroll horizontal */
 .crono-scroll{overflow-x:auto}
 
@@ -189,6 +200,16 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .btn-s{background:#fff;color:var(--mu);border:1px solid var(--bdr)}
 .btn-s:hover{border-color:var(--teal);color:var(--teal)}
 .btn-excel{background:#16a34a;color:#fff}.btn-excel:hover{background:#15803d}
+.btn-export-db{background:#0d6efd;color:#fff}.btn-export-db:hover{background:#0b5ed7}
+.btn-import-db{background:#6f42c1;color:#fff}.btn-import-db:hover{background:#5a32a3}
+.btn-load-db{background:#fd7e14;color:#fff}.btn-load-db:hover{background:#e96b0a}
+#mo-semester-export{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center}
+#mo-semester-export.on{display:flex}
+.semester-box{background:#1e2130;border-radius:16px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.5);text-align:center}
+.semester-box h3{font-size:18px;font-weight:700;margin-bottom:8px;color:#f1f5f9}
+.semester-box p{font-size:13px;color:#94a3b8;margin-bottom:24px;line-height:1.6}
+.semester-box .sem-btns{display:flex;gap:12px;justify-content:center}
+.sem-icon{font-size:42px;margin-bottom:12px}
 .btn-d{background:#fff1f2;color:var(--danger);border:1px solid #fecdd3;font-size:11px;padding:5px 10px}
 .btn-d:hover{background:#ffe4e6}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
@@ -345,7 +366,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 
       <!-- BUILDINGS -->
       <div class="view" id="v-bldgs">
-        <div class="sh"><span class="sht">Copropiedades</span><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button></div>
+        <div class="sh" style="flex-wrap:wrap;gap:8px"><span class="sht">Copropiedades</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center"><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button><button class="btn btn-export-db" id="btn-export-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Exportar BD</button><button class="btn btn-import-db" id="btn-import-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4v12"/></svg>Importar BD</button><button class="btn btn-load-db" id="btn-load-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Cargar Actuales</button><input type="file" id="import-file-input" accept=".json,.zip" style="display:none"></div></div>
         <div class="bgrid" id="bldgs-grid"></div>
       </div>
 
@@ -386,10 +407,16 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
             </table>
           </div>
           <div class="crono-footer">
-            <button class="add-row-btn" id="add-row-btn">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              Añadir Nuevo Equipo
-            </button>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <button class="add-row-btn" id="add-row-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Añadir Nuevo Equipo
+              </button>
+              <button class="add-row-btn add-acta-btn" id="add-acta-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Agregar Acta
+              </button>
+            </div>
             <span class="crono-footer-right" id="crono-footer-label">Cronograma — </span>
           </div>
         </div>
@@ -468,19 +495,19 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
         <label class="fl">Informe Técnico</label>
         <div class="upzone" id="mr-z1"><input type="file" id="mr-f1" accept=".pdf,.jpg,.jpeg,.png">
           <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <strong id="mr-l1">Click para subir informe</strong><p>PDF, JPG o PNG • máx 8MB</p></div>
+          <strong id="mr-l1">Click para subir informe</strong><p>PDF, JPG o PNG • máx 20MB</p></div>
       </div>
       <div class="fg">
         <label class="fl">Certificado</label>
         <div class="upzone" id="mr-z2"><input type="file" id="mr-f2" accept=".pdf,.jpg,.jpeg,.png">
           <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-          <strong id="mr-l2">Click para subir certificado</strong><p>PDF, JPG o PNG • máx 8MB</p></div>
+          <strong id="mr-l2">Click para subir certificado</strong><p>PDF, JPG o PNG • máx 20MB</p></div>
       </div>
       <div class="fg">
         <label class="fl">Documento Adicional</label>
         <div class="upzone" id="mr-z3"><input type="file" id="mr-f3" accept=".pdf,.jpg,.jpeg,.png">
           <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          <strong id="mr-l3">Click para subir documento adicional</strong><p>PDF, JPG o PNG • máx 8MB</p></div>
+          <strong id="mr-l3">Click para subir documento adicional</strong><p>PDF, JPG o PNG • máx 20MB</p></div>
       </div>
       <div id="mr-existing-files" style="display:none;margin-top:8px">
         <label class="fl">Archivos guardados</label>
@@ -643,6 +670,13 @@ function startApp(){
   document.getElementById("sb-role").textContent=currentUser.role==="admin"?"Administrador":"Usuario";
   document.getElementById("n-admin").style.display=currentUser.role==="admin"?"flex":"none";
   document.getElementById("add-bldg-btn").style.display=currentUser.role==="admin"?"inline-flex":"none";
+  var isAdm=currentUser.role==="admin";
+  document.getElementById("btn-export-db").style.display=isAdm?"inline-flex":"none";
+  document.getElementById("btn-import-db").style.display=isAdm?"inline-flex":"none";
+  document.getElementById("btn-load-db").style.display=isAdm?"inline-flex":"none";
+  document.getElementById("add-row-btn").style.display=isAdm?"inline-flex":"none";
+  document.getElementById("add-acta-btn").style.display=isAdm?"inline-flex":"none";
+  if(isAdm) checkSemesterExport();
   var h=new Date().getHours();
   document.getElementById("greeting").textContent=(h<12?"Buenos días":h<18?"Buenas tardes":"Buenas noches")+", "+currentUser.name.split(" ")[0];
   goTo("dash");
@@ -794,6 +828,7 @@ async function loadDetail(){
   showLoad(true);
   try{
     allMaints=await api("GET","/api/maintenances?buildingId="+currentBuilding.id);
+    allActas=await api("GET","/api/actas?buildingId="+currentBuilding.id);
     var now=new Date(); var ty=now.getFullYear(); var tm=now.getMonth()+1;
     document.getElementById("dh-title").textContent=currentBuilding.name;
     document.getElementById("dh-sub").textContent=allMaints.length+" equipos registrados";
@@ -930,6 +965,12 @@ function renderCrono(){
     rows+='</tr>';
   });
 
+  // Append acta rows at the end
+  var isAdm2=(currentUser&&currentUser.role==="admin");
+  if(allActas && allActas.length){
+    rows += renderActasRows(allActas, isAdm2);
+  }
+
   tbody.innerHTML=rows;
 
   // ── EDICIÓN INLINE (solo admin) ────────────────────────────────────────────
@@ -967,13 +1008,22 @@ function renderCrono(){
     });
   });
 
-  // Eliminar fila
-  tbody.querySelectorAll(".del-btn").forEach(function(btn){
+  // Eliminar fila (equipo)
+  tbody.querySelectorAll(".del-btn[data-del]").forEach(function(btn){
     btn.addEventListener("click",function(e){
       e.stopPropagation();
       var mid=this.getAttribute("data-del");
+      if(!mid||mid==="undefined") return;
       if(!confirm("¿Eliminar este equipo y todos sus registros?")) return;
       api("DELETE","/api/maintenances/"+mid).then(function(){ toast("Equipo eliminado","ok"); loadDetail(); }).catch(function(e){ toast(e.message,"err"); });
+    });
+  });
+  // Eliminar acta
+  tbody.querySelectorAll(".del-btn[data-del-acta]").forEach(function(btn){
+    btn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var aid=this.getAttribute("data-del-acta");
+      deleteActa(aid);
     });
   });
 }
@@ -1140,6 +1190,100 @@ function exportExcel(){
   toast("Excel exportado","ok");
 }
 
+// ── ACTAS ─────────────────────────────────────────────────────────────────────
+var allActas = [];
+
+function openActaModal(){
+  document.getElementById("a-tipo").value = "Acta Consejo";
+  document.getElementById("a-numero").value = "";
+  document.getElementById("a-envio").value = "";
+  document.getElementById("a-recibido").value = "";
+  document.getElementById("a-f1").value = "";
+  document.getElementById("a-l1").textContent = "Click para subir el acta";
+  openMo("mo-acta");
+}
+
+async function saveActa(){
+  var tipo = document.getElementById("a-tipo").value;
+  var numero = document.getElementById("a-numero").value.trim();
+  var envio = document.getElementById("a-envio").value;
+  var recibido = document.getElementById("a-recibido").value;
+  var file = document.getElementById("a-f1").files[0];
+  if(!tipo){ toast("Seleccione el tipo de acta","err"); return; }
+  var fd = new FormData();
+  fd.append("buildingId", currentBuilding.id);
+  fd.append("tipo", tipo);
+  fd.append("numero", numero);
+  fd.append("fechaEnvio", envio);
+  fd.append("fechaRecibido", recibido);
+  if(file) fd.append("file", file);
+  try{
+    await api("POST","/api/actas", fd, true);
+    closeMo("mo-acta");
+    await loadDetail();
+    toast("Acta guardada","ok");
+  } catch(e){ toast(e.message,"err"); }
+}
+
+async function deleteActa(id){
+  if(!confirm("¿Eliminar esta acta?")) return;
+  try{ await api("DELETE","/api/actas/"+id); await loadDetail(); toast("Acta eliminada","ok"); }
+  catch(e){ toast(e.message,"err"); }
+}
+
+function renderActasRows(actas, isAdmin){
+  var rows = "";
+  actas.forEach(function(a){
+    rows += '<tr class="acta-row">';
+    // Tipo + numero (span first 2 cols)
+    var tipoLabel = a.tipo === "Acta Asamblea"
+      ? '<span class="td-acta-tipo" style="color:#f472b6;background:rgba(244,114,182,.12)">Acta Asamblea</span>'
+      : '<span class="td-acta-tipo">Acta Consejo</span>';
+    var numStr = a.numero ? '<span class="td-acta-num"> #'+esc(a.numero)+'</span>' : '';
+    rows += '<td class="td-equipo">'+tipoLabel+numStr+'</td>';
+    rows += '<td class="td-provider" style="font-size:11px;color:var(--mu)">'+esc(a.created_by||"")+'</td>';
+    rows += '<td class="td-period" style="font-size:11px;color:var(--mu)">—</td>';
+    rows += '<td class="td-valor">—</td>';
+    // Month cells
+    for(var mo=1;mo<=12;mo++){
+      var cellHtml = "";
+      var cls = "td-month";
+      // Check if envio or recibido falls in this month
+      var hasEnvio = a.fecha_envio && (function(){
+        var d=new Date(a.fecha_envio+"T00:00:00");
+        return d.getFullYear()===calYear && d.getMonth()+1===mo;
+      })();
+      var hasRecib = a.fecha_recibido && (function(){
+        var d=new Date(a.fecha_recibido+"T00:00:00");
+        return d.getFullYear()===calYear && d.getMonth()+1===mo;
+      })();
+      if(hasEnvio || hasRecib){
+        cellHtml = '<div class="acta-cell-date">';
+        if(hasEnvio){
+          var dE=a.fecha_envio.split("-");
+          cellHtml += '<span class="acd-day">'+dE[2]+'</span><span class="acd-lbl">ENVÍO</span>';
+        }
+        if(hasRecib){
+          var dR=a.fecha_recibido.split("-");
+          cellHtml += '<span class="acd-day" style="color:#4ade80">'+dR[2]+'</span><span class="acd-lbl">FIRM.</span>';
+        }
+        cellHtml += '</div>';
+      }
+      rows += '<td class="'+cls+'">'+cellHtml+'</td>';
+    }
+    // File + delete button
+    var fileBtn = a.file_name
+      ? '<a href="/api/actas/'+a.id+'/file?token='+token+'" target="_blank" class="acta-file-btn"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>'+esc(a.file_name.length>14?a.file_name.substring(0,12)+'...':a.file_name)+'</a>'
+      : '';
+    rows += '<td class="td-del" style="white-space:nowrap">';
+    rows += fileBtn;
+    if(isAdmin) rows += '<button class="del-btn" data-del-acta="'+a.id+'" title="Eliminar acta">×</button>';
+    rows += '</td>';
+    rows += '</tr>';
+  });
+  return rows;
+}
+
 // ── PLANNER ────────────────────────────────────────────────────────────────────
 async function renderPlanner(){
   document.getElementById("plan-year").textContent=planYear;
@@ -1268,6 +1412,13 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("cal-next").addEventListener("click",function(){ calYear++; renderCrono(); });
   document.getElementById("btn-excel").addEventListener("click",exportExcel);
   document.getElementById("add-row-btn").addEventListener("click",openAddMaint);
+  document.getElementById("add-acta-btn").addEventListener("click",openActaModal);
+  // Modal acta
+  document.getElementById("ma-x").addEventListener("click",function(){ closeMo("mo-acta"); });
+  document.getElementById("ma-cancel").addEventListener("click",function(){ closeMo("mo-acta"); });
+  document.getElementById("ma-save").addEventListener("click",saveActa);
+  document.getElementById("a-z1").addEventListener("click",function(e){ if(!e.target.closest("input")) document.getElementById("a-f1").click(); });
+  document.getElementById("a-f1").addEventListener("change",function(){ if(this.files[0]) document.getElementById("a-l1").textContent=this.files[0].name; });
   // Buildings
   document.getElementById("add-bldg-btn").addEventListener("click",function(){ document.getElementById("b-name").value=""; document.getElementById("b-addr").value=""; openMo("mo-bldg"); });
   // Planner
@@ -1313,7 +1464,181 @@ document.addEventListener("DOMContentLoaded",function(){
   // Session restore
   var su=localStorage.getItem("hab_user"); var st=localStorage.getItem("hab_token");
   if(su&&st){ try{ currentUser=JSON.parse(su); token=st; startApp(); }catch(e){ localStorage.clear(); } }
+
+  // ── EXPORT/IMPORT BD BUTTONS ──────────────────────────────────────────────
+  document.getElementById("btn-export-db").addEventListener("click", exportBD);
+  document.getElementById("btn-import-db").addEventListener("click", function(){ document.getElementById("import-file-input").click(); });
+  document.getElementById("btn-load-db").addEventListener("click", loadCurrentDB);
+  document.getElementById("import-file-input").addEventListener("change", importBD);
+
+  // ── SEMESTER MODAL BUTTONS ─────────────────────────────────────────────────
+  document.getElementById("sem-yes-btn").addEventListener("click", function(){
+    document.getElementById("mo-semester-export").classList.remove("on");
+    exportBD();
+    localStorage.setItem("hab_last_semester_export", Date.now().toString());
+  });
+  document.getElementById("sem-no-btn").addEventListener("click", function(){
+    document.getElementById("mo-semester-export").classList.remove("on");
+    // Posponer 7 días
+    localStorage.setItem("hab_last_semester_export", (Date.now() - (180 - 7) * 86400000).toString());
+  });
 });
+
+// ── EXPORT BD ────────────────────────────────────────────────────────────────
+async function exportBD(){
+  try {
+    toast("Preparando exportación...", "ok");
+    var data = await api("GET", "/api/export-db");
+
+    // Build ZIP with JSZip (loaded from CDN)
+    if(typeof JSZip === "undefined"){ toast("Error: JSZip no disponible","err"); return; }
+    var zip = new JSZip();
+    var now = new Date();
+    var stamp = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+    var folder = zip.folder("HABITAT_BD_"+stamp);
+    // Main JSON
+    folder.file("habitat_database.json", JSON.stringify(data, null, 2));
+    // Buildings summary CSV
+    var csvB = "ID,Nombre,Direccion\n"+data.buildings.map(function(b){ return b.id+",\""+b.name+"\",\""+( b.address||"")+"\""; }).join("\n");
+    folder.file("edificios.csv", csvB);
+    // Mantenimientos CSV
+    var csvM = "ID,Edificio_ID,Tipo,Proveedor,Periodicidad,Valor,Proxima_Fecha\n"+data.maintenances.map(function(m){ return [m.id,m.building_id,"\""+m.type+"\"","\""+( m.provider||"")+"\"",m.periodicidad||"",m.valor||"",m.next_date||""].join(","); }).join("\n");
+    folder.file("mantenimientos.csv", csvM);
+    // Registros with attached files
+    var recFolder = folder.folder("registros_con_archivos");
+    data.monthly_records.forEach(function(r){
+      if(r.files && r.files.length){
+        var rFolder = recFolder.folder("registro_"+r.id);
+        r.files.forEach(function(f){
+          if(f.data){ rFolder.file(f.name, f.data, {base64:true}); }
+        });
+      }
+    });
+    // Clean records JSON (without binary data for readability)
+    var cleanRecords = data.monthly_records.map(function(r){
+      var rc = Object.assign({}, r);
+      if(rc.files) rc.files = rc.files.map(function(f){ return {id:f.id,name:f.name,label:f.label,mime:f.mime}; });
+      return rc;
+    });
+    folder.file("registros_mensuales.json", JSON.stringify(cleanRecords, null, 2));
+
+    var blob = await zip.generateAsync({type:"blob", compression:"DEFLATE"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "HABITAT_BD_"+stamp+".zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+    toast("Base de datos exportada exitosamente", "ok");
+  } catch(e){ toast("Error al exportar: "+e.message, "err"); }
+}
+
+// ── IMPORT BD ────────────────────────────────────────────────────────────────
+var _importedBackup = null;
+
+async function importBD(e){
+  var file = e.target.files[0];
+  if(!file){ return; }
+  e.target.value = "";
+  try {
+    toast("Leyendo archivo...", "ok");
+    var data;
+    if(file.name.endsWith(".zip")){
+      if(typeof JSZip === "undefined"){ toast("Error: JSZip no disponible","err"); return; }
+      var zip = await JSZip.loadAsync(file);
+      // Find habitat_database.json inside
+      var jsonFile = null;
+      zip.forEach(function(path, f){ if(path.endsWith("habitat_database.json")) jsonFile = f; });
+      if(!jsonFile){ toast("ZIP inválido: no se encontró habitat_database.json","err"); return; }
+      var jsonStr = await jsonFile.async("string");
+      data = JSON.parse(jsonStr);
+    } else {
+      var text = await file.text();
+      data = JSON.parse(text);
+    }
+    if(!data.buildings || !data.maintenances){ toast("Formato de backup inválido","err"); return; }
+    _importedBackup = data;
+    // Show DB counts to user
+    var msg = "¿Importar backup del "+( data.exportedAt ? new Date(data.exportedAt).toLocaleDateString("es-CO") : "")+"?\n\n"+
+      "• "+data.buildings.length+" edificios\n"+
+      "• "+data.maintenances.length+" mantenimientos\n"+
+      "• "+(data.monthly_records||[]).length+" registros mensuales\n\n"+
+      "ATENCIÓN: Esto reemplazará todos los datos actuales en el servidor.\n¿Continuar?";
+    if(!confirm(msg)){ _importedBackup=null; return; }
+    toast("Importando datos...","ok");
+    await api("POST","/api/import-db", data);
+    _importedBackup = null;
+    toast("Datos importados exitosamente. Recargando...","ok");
+    setTimeout(function(){ location.reload(); }, 1500);
+  } catch(e2){ toast("Error al importar: "+e2.message, "err"); _importedBackup=null; }
+}
+
+// ── LOAD CURRENT DB (discard imported, reload from server) ───────────────────
+async function loadCurrentDB(){
+  if(!confirm("¿Recargar los datos actuales del servidor? Se descartarán cambios no guardados.")) return;
+  _importedBackup = null;
+  toast("Recargando datos actuales...","ok");
+  try{
+    allBuildings = await api("GET","/api/buildings");
+    allMaints = await api("GET","/api/maintenances");
+    renderBuildings();
+    toast("Datos actuales cargados","ok");
+  } catch(e){ toast("Error: "+e.message,"err"); }
+}
+
+// ── SEMESTER AUTO-EXPORT CHECK (solo admin) ──────────────────────────────────
+function checkSemesterExport(){
+  if(!currentUser || currentUser.role !== "admin") return;
+  var last = parseInt(localStorage.getItem("hab_last_semester_export")||"0");
+  var SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
+  if(Date.now() - last >= SIX_MONTHS_MS){
+    setTimeout(function(){
+      document.getElementById("mo-semester-export").classList.add("on");
+    }, 3000);
+  }
+}
 </script>
+
+<!-- MODAL: AGREGAR ACTA -->
+<div class="moverlay" id="mo-acta">
+  <div class="modal">
+    <div class="mhead"><div><div class="mhead-title">Agregar Acta</div><div class="mhead-sub">Registre un acta de consejo o asamblea</div></div><button class="mclose" id="ma-x">✕</button></div>
+    <div class="mbody">
+      <div class="fg"><label class="fl">Tipo de Acta *</label>
+        <select class="fi" id="a-tipo" style="cursor:pointer">
+          <option value="Acta Consejo">Acta Consejo</option>
+          <option value="Acta Asamblea">Acta Asamblea</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Número del Acta</label><input type="text" class="fi" id="a-numero" placeholder="Ej: 001-2025"></div>
+      <div class="fgrid">
+        <div class="fg"><label class="fl fl-r">Fecha de Envío — Por Firmar</label><input type="date" class="fi" id="a-envio" style="border-color:#fecdd3"></div>
+        <div class="fg"><label class="fl fl-g">Fecha de Recibido — Firmado</label><input type="date" class="fi" id="a-recibido" style="border-color:#bbf7d0"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Archivo del Acta</label>
+        <div class="upzone" id="a-z1"><input type="file" id="a-f1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+          <svg style="width:20px;height:20px;margin:0 auto;display:block;opacity:.25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <strong id="a-l1">Click para subir el acta</strong><p>PDF, JPG, PNG, DOC • máx 20MB</p></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-s" id="ma-cancel">Cancelar</button><button class="btn btn-p" id="ma-save"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL EXPORTACIÓN SEMESTRAL -->
+<div id="mo-semester-export">
+  <div class="semester-box">
+    <div class="sem-icon">💾</div>
+    <h3>Exportación Semestral Automática</h3>
+    <p>Ha llegado el momento de realizar la exportación semestral de la base de datos.<br><strong>¿Desea exportar ahora todos los datos al equipo administrador?</strong></p>
+    <div class="sem-btns">
+      <button class="btn btn-p" id="sem-yes-btn">Sí, exportar ahora</button>
+      <button class="btn btn-s" id="sem-no-btn">No, omitir</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
