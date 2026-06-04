@@ -251,8 +251,12 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .upzone p{font-size:10px;color:var(--mu);margin-top:2px}
 .fta{width:100%;padding:9px 13px;border:1.5px solid var(--bdr);border-radius:9px;font-size:13px;font-family:inherit;color:var(--ink);resize:none;background:#fff}
 .fta:focus{outline:none;border-color:var(--teal)}
-.fchip{display:inline-flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid var(--bdr);border-radius:6px;padding:4px 9px;font-size:10px;font-weight:600;color:var(--mu);cursor:pointer;transition:all .15s;text-decoration:none}
+.fchip{display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid var(--bdr);border-radius:6px;padding:4px 7px;font-size:10px;font-weight:600;color:var(--mu);cursor:pointer;transition:all .15s;text-decoration:none}
 .fchip:hover{border-color:var(--teal);color:var(--teal);background:var(--tl)}
+.fchip-del{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;line-height:1;padding:0;transition:all .15s;flex-shrink:0}
+.fchip-del:hover{background:#fee2e2;color:#dc2626}
+.fchip-replace{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:11px;line-height:1;padding:0;transition:all .15s;flex-shrink:0}
+.fchip-replace:hover{background:#dbeafe;color:#2563eb}
 
 /* ─── FILE VIEWER ────────────────────────────────────────────── */
 #fv{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
@@ -1062,10 +1066,12 @@ function openRecordModal(maintId,year,month){
     fDiv.style.display="block";
     fList.innerHTML=files.map(function(f){
       var url="/api/monthly-records/"+rec.id+"/files/"+f.id+"?token="+token;
-      return '<span class="fchip" data-url="'+url+'" data-name="'+esc(f.name)+'" data-mime="'+(f.mime||"")+'">'+esc(f.label||f.name)+'</span>';
+      return '<span class="fchip" data-url="'+url+'" data-fid="'+f.id+'" data-rid="'+rec.id+'" data-name="'+esc(f.name)+'" data-label="'+esc(f.label||f.name)+'" data-mime="'+(f.mime||"")+'"><span class="fchip-name">'+esc(f.label||f.name)+'</span>'
+        +'<button class="fchip-replace" title="Reemplazar archivo" onclick="event.stopPropagation();replaceFile(this)">↑</button>'
+        +'<button class="fchip-del" title="Eliminar archivo" onclick="event.stopPropagation();deleteFile(this)">×</button></span>';
     }).join("");
     fList.querySelectorAll(".fchip").forEach(function(chip){
-      chip.addEventListener("click",function(){ openFV(this.getAttribute("data-url"),this.getAttribute("data-name"),this.getAttribute("data-mime")); });
+      chip.addEventListener("click",function(e){ if(e.target.closest("button")) return; openFV(this.getAttribute("data-url"),this.getAttribute("data-name"),this.getAttribute("data-mime")); });
     });
   } else { fDiv.style.display="none"; }
   openMo("mo-record");
@@ -1493,6 +1499,85 @@ document.addEventListener("DOMContentLoaded",function(){
     localStorage.setItem("hab_last_semester_export", (Date.now() - (180 - 7) * 86400000).toString());
   });
 });
+
+// ── DELETE / REPLACE FILE ────────────────────────────────────────────────────
+async function deleteFile(btn){
+  var chip = btn.closest(".fchip");
+  var fid = chip.getAttribute("data-fid");
+  var rid = chip.getAttribute("data-rid");
+  var label = chip.getAttribute("data-label");
+  if(!confirm('¿Eliminar el archivo "'+label+'"? Esta acción no se puede deshacer.')) return;
+  try {
+    var res = await api("DELETE", "/api/monthly-records/"+rid+"/files/"+fid);
+    // Update the fchip list in place
+    var fList = document.getElementById("mr-files-list");
+    var fDiv  = document.getElementById("mr-existing-files");
+    chip.remove();
+    if(!fList.querySelector(".fchip")){ fDiv.style.display="none"; }
+    toast("Archivo eliminado", "ok");
+  } catch(e){ toast("Error: "+e.message, "err"); }
+}
+
+function replaceFile(btn){
+  var chip = btn.closest(".fchip");
+  var fid  = chip.getAttribute("data-fid");
+  var rid  = chip.getAttribute("data-rid");
+  var label = chip.getAttribute("data-label");
+  // Create a hidden input, trigger it, then on change upload the new file and delete the old one
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = ".pdf,.jpg,.jpeg,.png";
+  inp.style.display = "none";
+  document.body.appendChild(inp);
+  inp.addEventListener("change", async function(){
+    var file = inp.files[0];
+    document.body.removeChild(inp);
+    if(!file) return;
+    if(file.size > 20*1024*1024){ toast("El archivo supera los 20MB", "err"); return; }
+    try {
+      // Upload as new file via saveRecord approach — we use a minimal FormData
+      // Determine which slot is free in the current upzones, or add as extra
+      // Simpler: DELETE old + POST new file appended via monthly-records update
+      toast("Subiendo reemplazo...", "ok");
+      // First delete old
+      await api("DELETE", "/api/monthly-records/"+rid+"/files/"+fid);
+      chip.remove();
+      var fList = document.getElementById("mr-files-list");
+      var fDiv  = document.getElementById("mr-existing-files");
+      if(!fList.querySelector(".fchip")){ fDiv.style.display="none"; }
+
+      // Now post new file using the first free upzone slot
+      // Find the maintenance ctx from recordCtx
+      var fd = new FormData();
+      fd.append("maintenanceId", recordCtx.maintId);
+      fd.append("year",  recordCtx.year);
+      fd.append("month", recordCtx.month);
+      // Preserve existing done/report/dates from current modal fields
+      fd.append("done",     document.getElementById("mr-done").checked);
+      fd.append("doneDate", document.getElementById("mr-done-date").value||"");
+      fd.append("label",    document.getElementById("mr-label").value||"");
+      fd.append("nextDate", document.getElementById("mr-next-date").value||"");
+      fd.append("report",   document.getElementById("mr-report").value||"");
+      fd.append("file1", file, file.name);
+      var rec = await api("POST", "/api/monthly-records", fd, true);
+      // Re-render fchip list with updated files
+      var files = rec.files||[];
+      if(files.length){
+        fDiv.style.display = "block";
+        fList.innerHTML = files.map(function(f){
+          var url = "/api/monthly-records/"+rec.id+"/files/"+f.id+"?token="+token;
+          return '<span class="fchip" data-url="'+url+'" data-fid="'+f.id+'" data-rid="'+rec.id+'" data-name="'+esc(f.name)+'" data-label="'+esc(f.label||f.name)+'" data-mime="'+(f.mime||'')+'"><span class="fchip-name">'+esc(f.label||f.name)+'</span>'
+            +'<button class="fchip-replace" title="Reemplazar archivo" onclick="event.stopPropagation();replaceFile(this)">↑</button>'
+            +'<button class="fchip-del" title="Eliminar archivo" onclick="event.stopPropagation();deleteFile(this)">×</button></span>';
+        }).join("");
+        fList.querySelectorAll(".fchip").forEach(function(chip2){
+          chip2.addEventListener("click", function(e){ if(e.target.closest("button")) return; openFV(this.getAttribute("data-url"),this.getAttribute("data-name"),this.getAttribute("data-mime")); });
+        });
+      }
+      toast("Archivo reemplazado exitosamente", "ok");
+    } catch(e){ toast("Error al reemplazar: "+e.message, "err"); }
+  });
+  inp.click();
+}
 
 // ── EXPORT BD ────────────────────────────────────────────────────────────────
 async function exportBD(){

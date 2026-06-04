@@ -363,6 +363,17 @@ app.post('/api/monthly-records',
   }
 );
 
+app.delete('/api/monthly-records/:recordId/files/:fileId', auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM monthly_records WHERE id=$1', [req.params.recordId]);
+    if (!rows[0]) return res.status(404).json({ error: 'Registro no encontrado' });
+    const updatedFiles = (rows[0].files||[]).filter(f => f.id !== req.params.fileId);
+    await pool.query('UPDATE monthly_records SET files=$1::jsonb, updated_at=NOW() WHERE id=$2',
+      [JSON.stringify(updatedFiles), req.params.recordId]);
+    res.json({ ok: true, files: updatedFiles.map(f=>({ id:f.id, name:f.name, label:f.label, mime:f.mime })) });
+  } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/monthly-records/:recordId/files/:fileId', auth, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT files FROM monthly_records WHERE id=$1',[req.params.recordId]);
