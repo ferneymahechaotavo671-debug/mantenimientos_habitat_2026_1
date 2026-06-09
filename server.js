@@ -20,7 +20,17 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: function(res, filePath) {
+    if (filePath.endsWith('sw.js')) {
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+    if (filePath.endsWith('manifest.json')) {
+      res.setHeader('Content-Type', 'application/manifest+json');
+    }
+  }
+}));
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function auth(req, res, next) {
@@ -198,7 +208,7 @@ app.patch('/api/users/:id', auth, adminOnly, async (req, res) => {
     let query, params;
     if (password && password.trim()) {
       const hash = await bcrypt.hash(password, 10);
-      query = 'UPDATE users SET name=COALESCE($1,name), username=COALESCE($2,username), password_hash=$3, role=COALESCE($4,role) WHERE id=$5 RETURNING id,name,username,role';
+      query = 'UPDATE users SET name=COALESCE($1,name), username=COALESCE($2,username), password=$3, role=COALESCE($4,role) WHERE id=$5 RETURNING id,name,username,role';
       params = [name||null, username||null, hash, role||null, req.params.id];
     } else {
       query = 'UPDATE users SET name=COALESCE($1,name), username=COALESCE($2,username), role=COALESCE($3,role) WHERE id=$4 RETURNING id,name,username,role';
