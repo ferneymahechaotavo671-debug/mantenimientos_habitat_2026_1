@@ -1093,17 +1093,8 @@ async function saveRecord(){
       if(maint && maint.periodicidad){
         var calculatedNext = calcNextDate(doneDate, maint.periodicidad);
         if(calculatedNext){
-          // Actualizar el nextDate del equipo en el servidor
-          await api("POST","/api/maintenances",{
-            buildingId: maint.buildingId,
-            type: maint.type,
-            code: maint.code||"",
-            provider: maint.provider||"",
-            periodicidad: maint.periodicidad,
-            valor: maint.valor||"",
-            nextDate: calculatedNext,
-            report: maint.report||""
-          });
+          // Actualizar el nextDate del equipo usando PATCH (solo cambia nextDate)
+          await api("PATCH","/api/maintenances/"+maint.id,{ nextDate: calculatedNext });
           // Crear registro "programado" en el mes de la próxima fecha
           var npParts = calculatedNext.split("-");
           var npYear = parseInt(npParts[0]);
