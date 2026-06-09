@@ -308,7 +308,89 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .empty-st svg{width:40px;height:40px;margin:0 auto 9px;display:block;opacity:.28}
 .empty-st p{font-size:14px;font-weight:500}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:8px}
-@media(max-width:768px){#sb{display:none}.sgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+  /* ── SIDEBAR: oculto en móvil, reemplazado por barra inferior ── */
+  #sb{display:none!important}
+
+  /* ── APP layout ── */
+  #app{flex-direction:column}
+  #main{height:100%;overflow:hidden}
+
+  /* ── TOPBAR ── */
+  .topbar{padding:0 14px;height:50px}
+  .bc{font-size:12px}
+
+  /* ── PAGE ── */
+  .page{padding:12px}
+
+  /* ── STATS GRID ── */
+  .sgrid{grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
+  .scard{padding:12px 13px}
+  .sn{font-size:20px}
+  .sl{font-size:10px}
+  .sicon{width:36px;height:36px}
+
+  /* ── BUILDING CARDS ── */
+  .bgrid{grid-template-columns:1fr}
+
+  /* ── DETAIL HEADER ── */
+  .dh{padding:14px;gap:12px}
+  .dh-title{font-size:15px}
+  .dh-stats{gap:12px;margin-left:0;width:100%}
+
+  /* ── PANEL HEADERS ── */
+  .sh{flex-direction:column;align-items:flex-start;gap:8px}
+  .sh>div{flex-wrap:wrap;gap:6px}
+
+  /* ── CRONOGRAMA: scroll horizontal ── */
+  .crono-outer{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .crono-table{min-width:900px}
+  .crono-year-bar{padding:8px 12px}
+  .crono-footer{padding:10px 12px;flex-direction:column;align-items:flex-start;gap:8px}
+
+  /* ── MODALES: full screen en móvil ── */
+  .moverlay{align-items:flex-end;padding:0}
+  .modal{max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
+  .mfoot{padding:12px 16px}
+  .mbody{padding:14px 16px}
+
+  /* ── BOTONES ── */
+  .btn{font-size:12px;padding:7px 12px}
+
+  /* ── LOGIN ── */
+  .lcard{padding:28px 22px;margin:12px;border-radius:18px}
+  .llogo img{width:64px;height:64px}
+  .llogo h1{font-size:17px}
+
+  /* ── NAV INFERIOR (bottom bar) ── */
+  #mobile-nav{display:flex}
+
+  /* ── NOTIFICATION PANEL ── */
+  .npanel{width:calc(100vw - 24px);right:-10px}
+
+  /* ── EXPORT/IMPORT BUTTONS ── */
+  #btn-export-db,#btn-import-db,#btn-load-db{font-size:11px;padding:6px 9px}
+
+  /* ── TABLE ACCIONES ── */
+  .atable th,.atable td{padding:8px 8px;font-size:11px}
+}
+
+@media(max-width:400px){
+  .sgrid{grid-template-columns:1fr}
+  .sn{font-size:18px}
+}
+
+/* ── MOBILE BOTTOM NAV ──────────────────────────────────────── */
+#mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(180deg,#0d1f1e,#0a1817);border-top:1px solid rgba(255,255,255,.08);z-index:800;padding:0 0 env(safe-area-inset-bottom,0)}
+.mnav-inner{display:flex;align-items:stretch}
+.mni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;color:rgba(255,255,255,.38);font-size:9px;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit;gap:3px;text-transform:uppercase}
+.mni svg{width:19px;height:19px}
+.mni.on{color:var(--tg)}
+.mni:active{background:rgba(20,184,166,.1)}
+/* When mobile nav is shown, add padding to page so content not hidden behind it */
+@media(max-width:768px){
+  .page{padding-bottom:72px}
+}
 </style>
 </head>
 <body>
@@ -685,6 +767,16 @@ function startApp(){
   document.getElementById("sb-name").textContent=currentUser.name;
   document.getElementById("sb-role").textContent=currentUser.role==="admin"?"Administrador":"Usuario";
   document.getElementById("n-admin").style.display=currentUser.role==="admin"?"flex":"none";
+  // Show mobile nav
+  if(window.innerWidth<=768){
+    document.getElementById("mobile-nav").style.display="block";
+    document.getElementById("mn-admin").style.display=currentUser.role==="admin"?"flex":"none";
+  }
+  window.addEventListener("resize",function(){
+    var mn=document.getElementById("mobile-nav");
+    if(window.innerWidth<=768){ mn.style.display="block"; }
+    else { mn.style.display="none"; }
+  });
   document.getElementById("add-bldg-btn").style.display=currentUser.role==="admin"?"inline-flex":"none";
   var isAdm=currentUser.role==="admin";
   document.getElementById("btn-export-db").style.display=isAdm?"inline-flex":"none";
@@ -703,6 +795,9 @@ function startApp(){
 function goTo(view){
   ["dash","bldgs","detail","plan","admin"].forEach(function(v){ var e=document.getElementById("v-"+v); if(e) e.classList.remove("on"); });
   ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("n-"+v); if(e) e.classList.remove("on"); });
+  // Sync mobile nav active state
+  ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("mn-"+v); if(e) e.classList.remove("on"); });
+  var mnActive=document.getElementById("mn-"+view); if(mnActive) mnActive.classList.add("on");
   var vEl=document.getElementById("v-"+view); if(vEl) vEl.classList.add("on");
   var nEl=document.getElementById("n-"+view); if(nEl) nEl.classList.add("on");
   if(view==="dash"){ setBc([{l:"Panel Principal"}]); renderDashboard(); }
@@ -724,6 +819,9 @@ async function fetchAndOpen(bidStr){
 function showDetail(){
   ["dash","bldgs","detail","plan","admin"].forEach(function(v){ var e=document.getElementById("v-"+v); if(e) e.classList.remove("on"); });
   ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("n-"+v); if(e) e.classList.remove("on"); });
+  // Sync mobile nav active state
+  ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("mn-"+v); if(e) e.classList.remove("on"); });
+  var mnActive=document.getElementById("mn-"+view); if(mnActive) mnActive.classList.add("on");
   document.getElementById("n-bldgs").classList.add("on");
   document.getElementById("v-detail").classList.add("on");
   setBc([{l:"Panel",f:"dash"},{l:"Copropiedades",f:"bldgs"},{l:currentBuilding.name}]);
@@ -1492,9 +1590,18 @@ document.addEventListener("DOMContentLoaded",function(){
   document.addEventListener("click",function(e){ if(!e.target.closest(".nwrap")) document.getElementById("n-panel").classList.remove("on"); });
   // Overlay close
   document.querySelectorAll(".moverlay").forEach(function(el){ el.addEventListener("click",function(e){ if(e.target===this){ document.getElementById("m-type")&&(document.getElementById("m-type").disabled=false); this.classList.remove("on"); } }); });
-  // Session restore
+  // Session restore — validate token with server first
   var su=localStorage.getItem("hab_user"); var st=localStorage.getItem("hab_token");
-  if(su&&st){ try{ currentUser=JSON.parse(su); token=st; startApp(); }catch(e){ localStorage.clear(); } }
+  if(su&&st){
+    try{
+      currentUser=JSON.parse(su); token=st;
+      // Quick server check
+      fetch(API+"/api/me",{headers:{"Authorization":"Bearer "+st}})
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(){ startApp(); })
+        .catch(function(){ localStorage.clear(); currentUser=null; token=null; });
+    }catch(e){ localStorage.clear(); }
+  }
 
   // ── EXPORT/IMPORT BD BUTTONS ──────────────────────────────────────────────
   document.getElementById("btn-export-db").addEventListener("click", exportBD);
@@ -1737,6 +1844,32 @@ function checkSemesterExport(){
     <div class="mfoot"><button class="btn btn-s" id="ma-cancel">Cancelar</button><button class="btn btn-p" id="ma-save"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Guardar</button></div>
   </div>
 </div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="mobile-nav" style="display:none">
+  <div class="mnav-inner">
+    <button class="mni" id="mn-dash" onclick="goTo('dash')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Inicio
+    </button>
+    <button class="mni" id="mn-bldgs" onclick="goTo('bldgs')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4v4m-5 4h1m4 0h1"/></svg>
+      Coprop.
+    </button>
+    <button class="mni" id="mn-plan" onclick="goTo('plan')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Plan.
+    </button>
+    <button class="mni" id="mn-admin" style="display:none" onclick="goTo('admin')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Admin
+    </button>
+    <button class="mni" id="mn-logout" onclick="document.querySelector('.logob').click()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      Salir
+    </button>
+  </div>
+</nav>
 
 <!-- MODAL EXPORTACIÓN SEMESTRAL -->
 <div id="mo-semester-export">

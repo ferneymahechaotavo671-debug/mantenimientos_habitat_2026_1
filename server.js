@@ -227,6 +227,11 @@ app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── ME (token validation) ─────────────────────────────────────────────────────
+app.get('/api/me', auth, async (req, res) => {
+  res.json({ id: req.user.id, name: req.user.name, username: req.user.username, role: req.user.role });
+});
+
 // ── BUILDINGS ─────────────────────────────────────────────────────────────────
 app.get('/api/buildings', auth, async (req, res) => {
   try { const { rows } = await pool.query('SELECT id,name,address FROM buildings ORDER BY name'); res.json(rows); }
