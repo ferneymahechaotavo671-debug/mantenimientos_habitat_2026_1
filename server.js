@@ -186,6 +186,29 @@ app.post('/api/users', auth, adminOnly, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+app.patch('/api/users/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { name, username, password, role } = req.body;
+    const existing = await pool.query('SELECT id FROM users WHERE id=$1', [req.params.id]);
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (username) {
+      const dup = await pool.query('SELECT id FROM users WHERE username=$1 AND id!=$2', [username, req.params.id]);
+      if (dup.rows[0]) return res.status(400).json({ error: 'El usuario ya existe' });
+    }
+    let query, params;
+    if (password && password.trim()) {
+      const hash = await bcrypt.hash(password, 10);
+      query = 'UPDATE users SET name=COALESCE($1,name), username=COALESCE($2,username), password_hash=$3, role=COALESCE($4,role) WHERE id=$5 RETURNING id,name,username,role';
+      params = [name||null, username||null, hash, role||null, req.params.id];
+    } else {
+      query = 'UPDATE users SET name=COALESCE($1,name), username=COALESCE($2,username), role=COALESCE($3,role) WHERE id=$4 RETURNING id,name,username,role';
+      params = [name||null, username||null, role||null, req.params.id];
+    }
+    const { rows } = await pool.query(query, params);
+    res.json(rows[0]);
+  } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
 app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   try {
     if (parseInt(req.params.id)===req.user.id) return res.status(400).json({ error: 'No puedes eliminarte' });

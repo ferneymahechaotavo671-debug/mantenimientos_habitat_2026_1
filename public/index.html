@@ -323,9 +323,6 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
     <input type="password" id="l-pass" class="li" placeholder="••••••••" autocomplete="current-password">
     <button class="lb" id="l-btn">INGRESAR AL SISTEMA</button>
     <div class="lerr" id="l-err"></div>
-    <hr class="lhr">
-    <p style="font-size:10px;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Acceso rápido</p>
-    <div id="quick-list"></div>
   </div>
 </div>
 
@@ -538,7 +535,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
     <div class="mbody">
       <div class="fg"><label class="fl">Nombre</label><input type="text" class="fi" id="u-name" placeholder="Ej: Carlos Ramirez"></div>
       <div class="fg"><label class="fl">Usuario (correo)</label><input type="text" class="fi" id="u-user" placeholder="correo@habitatph.com"></div>
-      <div class="fg"><label class="fl">Contraseña</label><input type="password" class="fi" id="u-pass" placeholder="Mínimo 6 caracteres"></div>
+      <div class="fg"><label class="fl">Contraseña</label><input type="password" class="fi" id="u-pass" placeholder="Mínimo 6 caracteres"><span id="u-pass-hint" style="font-size:10px;color:var(--mu);margin-top:3px;display:none">Dejar vacío para no cambiar la contraseña</span></div>
       <div class="fg"><label class="fl">Rol</label><select class="fi" id="u-role" style="cursor:pointer"><option value="admin">Administrador</option><option value="user">Usuario</option></select></div>
     </div>
     <div class="mfoot"><button class="btn btn-s" id="mu-cancel">Cancelar</button><button class="btn btn-p" id="mu-save">Guardar Usuario</button></div>
@@ -695,11 +692,7 @@ function startApp(){
   document.getElementById("greeting").textContent=(h<12?"Buenos días":h<18?"Buenas tardes":"Buenas noches")+", "+currentUser.name.split(" ")[0];
   goTo("dash");
 }
-document.getElementById("quick-list").innerHTML=
-  '<div class="qchip" id="qc1"><div class="qav">A</div><span class="qname">admin@habitatph.com</span><span class="qrole">Admin</span></div>'+
-  '<div class="qchip" id="qc2"><div class="qav">T</div><span class="qname">tecnico@habitatph.com</span><span class="qrole">Usuario</span></div>';
-document.getElementById("qc1").addEventListener("click",function(){ document.getElementById("l-user").value="admin@habitatph.com"; document.getElementById("l-pass").value="admin123"; doLogin(); });
-document.getElementById("qc2").addEventListener("click",function(){ document.getElementById("l-user").value="tecnico@habitatph.com"; document.getElementById("l-pass").value="tecnico123"; doLogin(); });
+
 
 // ── NAVIGATION ─────────────────────────────────────────────────────────────────
 function goTo(view){
@@ -1356,30 +1349,59 @@ function renderNotifications(maints,bldgs){
 }
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────────
+var _editUserId = null;
+
 async function renderAdmin(){
   showLoad(true);
   try{
     var users=await api("GET","/api/users");
     var html="";
     users.forEach(function(u){
+      var isSelf = String(u.id)===String(currentUser.id);
       html+='<tr><td><div style="display:flex;align-items:center;gap:9px"><div style="width:28px;height:28px;border-radius:50%;background:var(--tl);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--teal)">'+u.name.charAt(0)+'</div><span style="font-weight:500">'+esc(u.name)+'</span></div></td>'+
         '<td style="color:var(--mu)">'+esc(u.username)+'</td>'+
         '<td><span class="rtag '+(u.role==="admin"?"rt-a":"rt-u")+'">'+(u.role==="admin"?"Administrador":"Usuario")+'</span></td>'+
-        '<td><button class="btn btn-d" data-uid="'+u.id+'"'+(String(u.id)===String(currentUser.id)?" disabled":"")+'>Eliminar</button></td></tr>';
+        '<td style="display:flex;gap:6px">'+
+          '<button class="btn btn-s btn-edit-user" data-uid="'+u.id+'" data-name="'+esc(u.name)+'" data-username="'+esc(u.username)+'" data-role="'+u.role+'">Editar</button>'+
+          '<button class="btn btn-d" data-uid="'+u.id+'"'+(isSelf?' disabled title="No puedes eliminarte"':'')+'>Eliminar</button>'+
+        '</td></tr>';
     });
     document.getElementById("users-tb").innerHTML=html;
     document.querySelectorAll("#users-tb .btn-d").forEach(function(el){
-      el.addEventListener("click",async function(){ if(!confirm("¿Eliminar?")) return; try{ await api("DELETE","/api/users/"+this.getAttribute("data-uid")); toast("Eliminado","ok"); renderAdmin(); }catch(e){ toast(e.message,"err"); } });
+      el.addEventListener("click",async function(){ if(!confirm("¿Eliminar usuario?")) return; try{ await api("DELETE","/api/users/"+this.getAttribute("data-uid")); toast("Eliminado","ok"); renderAdmin(); }catch(e){ toast(e.message,"err"); } });
+    });
+    document.querySelectorAll("#users-tb .btn-edit-user").forEach(function(el){
+      el.addEventListener("click", function(){
+        _editUserId = this.getAttribute("data-uid");
+        document.getElementById("mo-user-title").textContent = "Editar Usuario";
+        document.getElementById("u-name").value = this.getAttribute("data-name")||"" ;
+        document.getElementById("u-user").value = this.getAttribute("data-username")||"" ;
+        document.getElementById("u-pass").value = "";
+        document.getElementById("u-role").value = this.getAttribute("data-role")||"user";
+        document.getElementById("u-pass-hint").style.display = "block";
+        document.getElementById("mu-save").textContent = "Guardar Cambios";
+        openMo("mo-user");
+      });
     });
   }catch(e){ toast(e.message,"err"); }finally{ showLoad(false); }
 }
+
 async function saveUser(){
   var name=document.getElementById("u-name").value.trim();
   var username=document.getElementById("u-user").value.trim();
   var password=document.getElementById("u-pass").value;
   var role=document.getElementById("u-role").value;
-  if(!name||!username||!password){ toast("Complete todos los campos","err"); return; }
-  try{ await api("POST","/api/users",{name,username,password,role}); closeMo("mo-user"); renderAdmin(); toast("Usuario creado","ok"); }catch(e){ toast(e.message,"err"); }
+  if(!name||!username){ toast("Complete nombre y correo","err"); return; }
+  if(_editUserId){
+    // EDIT mode
+    var patch={name,username,role};
+    if(password) patch.password=password;
+    try{ await api("PATCH","/api/users/"+_editUserId,patch); closeMo("mo-user"); renderAdmin(); toast("Usuario actualizado","ok"); }catch(e){ toast(e.message,"err"); }
+  } else {
+    // CREATE mode
+    if(!password){ toast("Ingrese una contraseña","err"); return; }
+    try{ await api("POST","/api/users",{name,username,password,role}); closeMo("mo-user"); renderAdmin(); toast("Usuario creado","ok"); }catch(e){ toast(e.message,"err"); }
+  }
 }
 async function saveBuilding(){
   var name=document.getElementById("b-name").value.trim();
@@ -1446,7 +1468,7 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("mu-x").addEventListener("click",function(){ closeMo("mo-user"); });
   document.getElementById("mu-cancel").addEventListener("click",function(){ closeMo("mo-user"); });
   document.getElementById("mu-save").addEventListener("click",saveUser);
-  document.getElementById("add-user-btn").addEventListener("click",function(){ document.getElementById("u-name").value=""; document.getElementById("u-user").value=""; document.getElementById("u-pass").value=""; openMo("mo-user"); });
+  document.getElementById("add-user-btn").addEventListener("click",function(){ _editUserId=null; document.getElementById("mo-user-title").textContent="Nuevo Usuario"; document.getElementById("u-name").value=""; document.getElementById("u-user").value=""; document.getElementById("u-pass").value=""; document.getElementById("u-role").value="user"; document.getElementById("u-pass-hint").style.display="none"; document.getElementById("mu-save").textContent="Guardar Usuario"; openMo("mo-user"); });
   // Modal: edificio
   document.getElementById("mb-x").addEventListener("click",function(){ closeMo("mo-bldg"); });
   document.getElementById("mb-cancel").addEventListener("click",function(){ closeMo("mo-bldg"); });
