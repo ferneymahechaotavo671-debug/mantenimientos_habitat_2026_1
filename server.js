@@ -299,6 +299,27 @@ app.post('/api/maintenances', auth, async (req, res) => {
   } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
 });
 
+// Update a single maintenance field (admin only)
+app.patch('/api/maintenances/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { type, provider, periodicidad, valor, nextDate, report, contacto, celular } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE maintenances SET
+        type=COALESCE($1,type), provider=COALESCE($2,provider),
+        periodicidad=COALESCE($3,periodicidad), valor=COALESCE($4,valor),
+        next_date=COALESCE($5,next_date), report=COALESCE($6,report),
+        contacto=COALESCE($7,contacto), celular=COALESCE($8,celular),
+        updated_at=NOW()
+       WHERE id=$9 RETURNING *`,
+      [type??null, provider??null, periodicidad??null, valor??null,
+       nextDate??null, report??null, contacto??null, celular??null,
+       req.params.id]
+    );
+    if(!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    res.json(fmtM(rows[0], []));
+  } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
 // Any authenticated user can delete a maintenance row
 app.delete('/api/maintenances/:id', auth, async (req, res) => {
   try { await pool.query('DELETE FROM maintenances WHERE id=$1',[req.params.id]); res.json({ ok:true }); }

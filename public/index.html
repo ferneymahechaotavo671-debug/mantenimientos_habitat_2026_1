@@ -467,7 +467,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
         <div class="fg"><label class="fl">Periodicidad</label>
           <select class="fi" id="m-period" style="cursor:pointer">
             <option value="">Seleccione</option>
-            <option>MENSUAL</option><option>BIMESTRAL</option><option>TRIMESTRAL</option>
+            <option>MENSUAL</option><option>BIMESTRAL</option><option>TRIMESTRAL</option><option>CUATRIMESTRAL</option>
             <option>SEMESTRAL</option><option>ANUAL</option><option>TRIENAL</option><option>OTRO</option>
           </select>
         </div>
@@ -614,6 +614,7 @@ function calcNextDate(doneDate, periodicidad){
   else if(p==="SEMESTRAL") months=6;
   else if(p==="ANUAL")     months=12;
   else if(p==="TRIENAL")   months=36;
+  else if(p==="CUATRIMESTRAL") d.setMonth(d.getMonth()+4);
   else return null; // OTRO u otras periodicidades no las calculamos automáticamente
   d.setMonth(d.getMonth()+months);
   var y=d.getFullYear();
@@ -856,21 +857,12 @@ async function saveInlineField(mid, field, value){
   var m=null;
   for(var i=0;i<allMaints.length;i++){ if(String(allMaints[i].id)===String(mid)){ m=allMaints[i]; break; } }
   if(!m) return;
-  // Construir el objeto con todos los campos actuales + el campo modificado
-  var updated={
-    buildingId: m.buildingId,
-    type: field==="type"?value:m.type,
-    contacto: field==="contacto"?value:(m.contacto||""),
-    celular: field==="celular"?value:(m.celular||""),
-    provider: field==="provider"?value:(m.provider||""),
-    periodicidad: field==="periodicidad"?value:(m.periodicidad||""),
-    valor: field==="valor"?value:(m.valor||""),
-    nextDate: m.nextDate||"",
-    report: m.report||""
-  };
+  // Solo enviar el campo que cambió — el servidor hace PATCH parcial
+  var patch={};
+  patch[field]=value;
   try{
-    await api("POST","/api/maintenances",updated);
-    // Actualizar allMaints local para que el calendario no se desincronice
+    await api("PATCH","/api/maintenances/"+mid,patch);
+    // Actualizar allMaints local
     for(var j=0;j<allMaints.length;j++){
       if(String(allMaints[j].id)===String(mid)){
         allMaints[j][field]=value;
@@ -902,7 +894,7 @@ function renderCrono(){
       rows+='<td class="td-provider td-edit" contenteditable="true" data-field="provider" data-mid="'+m.id+'" title="Click para editar">'+esc(m.provider||"")+'</td>';
       rows+='<td class="td-period td-edit" contenteditable="false" data-field="periodicidad" data-mid="'+m.id+'">'+
         '<select class="td-select" data-field="periodicidad" data-mid="'+m.id+'">'+
-          ['','MENSUAL','BIMESTRAL','TRIMESTRAL','SEMESTRAL','ANUAL','TRIENAL','OTRO'].map(function(o){ return '<option value="'+o+'"'+(m.periodicidad===o?' selected':'')+'>'+( o||'—')+'</option>'; }).join('')+
+          ['','MENSUAL','BIMESTRAL','TRIMESTRAL','CUATRIMESTRAL','SEMESTRAL','ANUAL','TRIENAL','OTRO'].map(function(o){ return '<option value="'+o+'"'+(m.periodicidad===o?' selected':'')+'>'+( o||'—')+'</option>'; }).join('')+
         '</select></td>';
       rows+='<td class="td-valor td-edit" contenteditable="true" data-field="valor" data-mid="'+m.id+'" title="Click para editar">'+esc(m.valor||"")+'</td>';
       rows+='<td class="td-contact td-edit" contenteditable="true" data-field="contacto" data-mid="'+m.id+'" title="Click para editar">'+esc(m.contacto||"")+'</td>';
