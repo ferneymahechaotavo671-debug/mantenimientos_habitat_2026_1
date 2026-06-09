@@ -156,10 +156,10 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .crono-table td.td-month.future{cursor:default}
 .crono-table td.td-month.future:hover{background:transparent}
 /* Etiqueta dentro de la celda */
-.cell-label{display:inline-block;font-size:11px;font-weight:700;line-height:1.3;border-radius:4px;padding:1px 0;min-width:36px;text-align:center}
-.cl-done{color:#1d4ed8}            /* azul — realizado (como en imagen) */
-.cl-done-multi{color:#1d4ed8;font-size:10px;line-height:1.2} /* multi-linea */
-.cl-no{color:var(--danger)}        /* rojo — no realizado */
+.cell-label{display:inline-block;font-size:11px;font-weight:700;line-height:1.3;border-radius:5px;padding:2px 4px;min-width:36px;text-align:center}
+.cl-done{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}  /* verde — realizado */
+.cl-done-multi{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;font-size:10px;line-height:1.2} /* verde multi-linea */
+.cl-no{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}    /* rojo — no realizado */
 .cl-pend{color:#0891b2}            /* cyan — programado futuro */
 .cl-vig{color:#059669;font-size:10px;font-weight:700} /* VIG verde */
 .cl-empty{color:#cbd5e1;font-size:10px} /* gris — sin registro */
@@ -168,9 +168,10 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .td-edit:focus{outline:2px solid var(--teal);outline-offset:-2px;background:rgba(13,148,136,.04)}
 .td-select{border:none;background:transparent;font-size:11px;color:var(--mu);font-family:inherit;cursor:pointer;width:100%;padding:2px 0}
 .td-select:focus{outline:none}
-.td-no{background:rgba(244,63,94,.04)}
-.td-overdue{background:rgba(244,63,94,.08)}
-.td-overdue:hover{background:rgba(244,63,94,.14) !important}
+.td-done{background:rgba(21,128,61,.05)}
+.td-no{background:rgba(220,38,38,.06)}
+.td-overdue{background:rgba(220,38,38,.10)}
+.td-overdue:hover{background:rgba(220,38,38,.16) !important}
 /* Columna eliminar */
 .td-del{width:28px;text-align:center;padding:0 6px;border-right:none}
 .del-btn{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s}
@@ -425,7 +426,11 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
                 Agregar Acta
               </button>
             </div>
-            <span class="crono-footer-right" id="crono-footer-label">Cronograma — </span>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mu)"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:#dcfce7;border:1px solid #bbf7d0"></span>Sí se realizó</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mu)"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:#fee2e2;border:1px solid #fecaca"></span>No se realizó</span>
+              <span class="crono-footer-right" id="crono-footer-label">Cronograma — </span>
+            </div>
           </div>
         </div>
       </div>
@@ -494,7 +499,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
       <div id="mr-done-fields" style="display:none">
         <div class="fgrid">
           <div class="fg"><label class="fl fl-g">Fecha de realización</label><input type="date" class="fi" id="mr-done-date" style="border-color:#bbf7d0"></div>
-          <div class="fg"><label class="fl">Etiqueta en calendario</label><input type="text" class="fi" id="mr-label" placeholder="Ej: 15 (día) o VIG o MAR"></div>
+          <input type="hidden" id="mr-label" value="">
           <div class="fg ffull"><label class="fl fl-r">Próxima Fecha</label><input type="date" class="fi" id="mr-next-date" style="border-color:#fecdd3"></div>
         </div>
       </div>
@@ -921,23 +926,15 @@ function renderCrono(){
       var nextDateRef = (rec && rec.nextDate) ? rec.nextDate : m.nextDate;
 
       if(rec&&rec.done){
-        // REALIZADO — día en azul
-        var lbl = rec.label || fmtDay(rec.doneDate);
-        if(!lbl && rec.doneDate){ var pp=rec.doneDate.split("-"); lbl=pp[2]; }
-        if(lbl && lbl.includes("\n")){
-          var parts=lbl.split("\n");
-          cellContent='<span class="cell-label cl-done-multi">'+parts[0]+'<br>'+parts[1]+'</span>';
-        } else if(lbl&&lbl.toUpperCase()==="VIG"){
-          cellContent='<span class="cell-label cl-vig">VIG</span>';
-        } else {
-          cellContent='<span class="cell-label cl-done">'+esc(lbl)+'</span>';
-        }
+        // REALIZADO — verde con día de realización
+        var dayLbl="✓";
+        if(rec.doneDate){ var ppD=rec.doneDate.split("-"); dayLbl=ppD[2]; }
+        cls+=" td-done";
+        cellContent='<span class="cell-label cl-done">'+dayLbl+'</span>';
       } else if(rec&&!rec.done){
-        // MARCADO NO REALIZADO — rojo con ✕
-        var noLbl="✕";
-        if(nextDateRef){ var ppNo=nextDateRef.split("-"); noLbl="✕<br><span style='font-size:8px'>"+ppNo[2]+"/"+ppNo[1]+"</span>"; }
+        // NO REALIZADO — rojo con ✕
         cls+=" td-no";
-        cellContent='<span class="cell-label cl-no" style="line-height:1.3">'+noLbl+'</span>';
+        cellContent='<span class="cell-label cl-no">✕</span>';
       } else if(isFuture){
         // FUTURO — mostrar próxima fecha si corresponde a ESTE mes
         // Usa nextDateRef que puede ser la del registro previo O la del equipo
