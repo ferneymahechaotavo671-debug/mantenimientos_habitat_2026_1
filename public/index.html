@@ -117,6 +117,7 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 .si-w{background:#fef3c7;color:var(--warn)}.si-d{background:#ffe4e6;color:var(--danger)}
 .sn{font-size:24px;font-weight:800;line-height:1;color:var(--ink)}.sl{font-size:11px;color:var(--mu);margin-top:2px}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.sh-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .sht{font-size:17px;font-weight:800;color:var(--ink)}
 
 /* ─── BUILDING CARDS ─────────────────────────────────────────── */
@@ -324,7 +325,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 
   /* APP */
   #app{flex-direction:column}
-  #main{height:100%;overflow:hidden}
+  #main{height:100%}
 
   /* TOPBAR */
   .topbar{padding:0 14px;height:50px;gap:8px}
@@ -334,7 +335,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .bc-cur{font-size:13px;font-weight:700}
 
   /* PAGE */
-  .page{padding:12px 12px 80px 12px}
+  .page{padding:12px 12px 80px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch;height:calc(100vh - 50px)}
 
   /* DASHBOARD */
   .sgrid{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
@@ -347,7 +348,9 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 
   /* SECTION HEADERS */
   .sht{font-size:14px}
-  .sh{gap:8px}
+  .sh{gap:8px;flex-wrap:wrap}
+  .sh-actions{flex-wrap:wrap;width:100%}
+  .sh-actions .btn{flex:1;min-width:0;justify-content:center}
 
   /* BUILDING CARDS */
   .bgrid{grid-template-columns:1fr 1fr;gap:9px}
@@ -395,8 +398,8 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   #v-plan .back{margin-bottom:12px}
 
   /* ADMIN USERS */
-  #users-tb-wrap{display:none}
-  #users-mobile-cards{display:block}
+  #users-tb-wrap{display:none!important}
+  #users-mobile-cards{display:block!important}
   .ucard{border-radius:12px;padding:13px;margin-bottom:9px}
   .ucard-info strong{font-size:13px}
   .ucard-info span{font-size:11px}
@@ -528,7 +531,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 
       <!-- BUILDINGS -->
       <div class="view" id="v-bldgs">
-        <div class="sh" style="flex-wrap:wrap;gap:8px"><span class="sht">Copropiedades</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center"><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button><button class="btn btn-export-db" id="btn-export-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg><span>Exportar BD</span></button><button class="btn btn-import-db" id="btn-import-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4v12"/></svg><span>Importar BD</span></button><button class="btn btn-load-db" id="btn-load-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Cargar Actuales</span></button><input type="file" id="import-file-input" accept=".json,.zip" style="display:none"></div></div>
+        <div class="sh"><span class="sht">Copropiedades</span><div class="sh-actions"><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button><button class="btn btn-export-db" id="btn-export-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg><span>Exportar BD</span></button><button class="btn btn-import-db" id="btn-import-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4v12"/></svg><span>Importar BD</span></button><button class="btn btn-load-db" id="btn-load-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Cargar Actuales</span></button><input type="file" id="import-file-input" accept=".json,.zip" style="display:none"></div></div>
         <div class="bgrid" id="bldgs-grid"></div>
       </div>
 
