@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MANTENIMIENTOS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -28,7 +28,7 @@ html,body{height:100%;font-family:"DM Sans",sans-serif;background:#f8fafc;color:
 h1,h2,h3,h4{font-family:"Syne",sans-serif}
 
 /* ─── LOGIN ──────────────────────────────────────────────────── */
-#ls{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f1923,#0d2b27,#0a1f1d);z-index:9999}
+#ls{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f1923,#0d2b27,#0a1f1d);z-index:9999;transition:all .3s}
 .lbg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .lbg span{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(20,184,166,.15),transparent 70%);animation:pulse 4s ease-in-out infinite}
 .lbg span:nth-child(1){width:600px;height:600px;top:-100px;left:-100px}
@@ -308,76 +308,133 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .empty-st svg{width:40px;height:40px;margin:0 auto 9px;display:block;opacity:.28}
 .empty-st p{font-size:14px;font-weight:500}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:8px}
+/* ── USER CARDS (mobile) ─────────────────────────────────────── */
+#users-mobile-cards{display:none}
+.ucard{background:#fff;border:1px solid var(--bdr);border-radius:13px;padding:14px;margin-bottom:10px}
+.ucard-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ucard-av{width:36px;height:36px;border-radius:50%;background:var(--tl);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--teal);flex-shrink:0}
+.ucard-info{flex:1;min-width:0}.ucard-info strong{display:block;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ucard-info span{display:block;font-size:11px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ucard-btns{display:flex;gap:8px}
+
 @media(max-width:768px){
-  /* ── SIDEBAR: oculto en móvil, reemplazado por barra inferior ── */
+  /* ── SIDEBAR ── */
   #sb{display:none!important}
 
-  /* ── APP layout ── */
+  /* ── APP & MAIN ── */
   #app{flex-direction:column}
   #main{height:100%;overflow:hidden}
 
   /* ── TOPBAR ── */
-  .topbar{padding:0 14px;height:50px}
-  .bc{font-size:12px}
+  .topbar{padding:0 14px;height:50px;gap:8px}
+  .bc{font-size:11px;gap:4px}
+  .bc-sep,.bc-link{display:none}
+  .bc-cur{color:var(--ink);font-weight:700;font-size:13px}
 
   /* ── PAGE ── */
-  .page{padding:12px}
+  .page{padding:12px 12px 80px}
 
-  /* ── STATS GRID ── */
+  /* ── GREETING / DASHBOARD ── */
   .sgrid{grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
-  .scard{padding:12px 13px}
-  .sn{font-size:20px}
-  .sl{font-size:10px}
-  .sicon{width:36px;height:36px}
+  .scard{padding:12px 13px;gap:10px}
+  .sn{font-size:20px}.sl{font-size:10px}
+  .sicon{width:36px;height:36px;border-radius:8px}
+  .sicon svg{width:16px;height:16px}
+  #v-dash .sh{margin-bottom:12px}
 
   /* ── BUILDING CARDS ── */
-  .bgrid{grid-template-columns:1fr}
-
-  /* ── DETAIL HEADER ── */
-  .dh{padding:14px;gap:12px}
-  .dh-title{font-size:15px}
-  .dh-stats{gap:12px;margin-left:0;width:100%}
+  .bgrid{grid-template-columns:1fr 1fr;gap:10px}
+  .bcard{padding:14px}
+  .bcard-ic{width:32px;height:32px;margin-bottom:8px}
+  .bcard-name{font-size:12px;margin-bottom:5px}
 
   /* ── PANEL HEADERS ── */
   .sh{flex-direction:column;align-items:flex-start;gap:8px}
-  .sh>div{flex-wrap:wrap;gap:6px}
+  .sh>div{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+  .sh>div .btn{flex:1;min-width:0;justify-content:center;font-size:11px;padding:7px 8px}
+  .sht{font-size:15px}
 
-  /* ── CRONOGRAMA: scroll horizontal ── */
-  .crono-outer{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .crono-table{min-width:900px}
+  /* ── DETAIL HEADER ── */
+  .dh{padding:12px 14px;gap:10px;flex-wrap:wrap}
+  .dh-ic{width:40px;height:40px;border-radius:10px}
+  .dh-ic svg{width:20px;height:20px}
+  .dh-title{font-size:14px}.dh-sub{font-size:11px}
+  .dh-stats{display:flex;gap:14px;margin-left:0;width:100%;padding-top:4px;border-top:1px solid var(--bdr)}
+  .dhs-n{font-size:17px}.dhs-l{font-size:10px}
+
+  /* ── BACK BUTTON ── */
+  .back{font-size:12px;margin-bottom:12px;padding:6px 0}
+
+  /* ── CRONOGRAMA ── */
+  .crono-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
+  .crono-table{min-width:980px}
   .crono-year-bar{padding:8px 12px}
+  .crono-year-bar span{font-size:14px}
   .crono-footer{padding:10px 12px;flex-direction:column;align-items:flex-start;gap:8px}
+  .crono-footer .btn{font-size:11px;padding:6px 10px}
+  /* Sticky first column for cronograma on scroll */
+  .crono-table .td-equipo{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.06)}
+  .crono-table thead th:first-child{position:sticky;left:0;background:#f8fafc;z-index:3}
 
-  /* ── MODALES: full screen en móvil ── */
+  /* ── PLANIFICADOR ── */
+  .pgrid{grid-template-columns:1fr 1fr;gap:10px}
+  .pmon-h{font-size:11px;padding:9px 11px}
+  .pitem{padding:7px 11px;font-size:10px}
+  #v-plan .sh{margin-bottom:12px}
+  #v-plan .back{margin-bottom:12px}
+
+  /* ── PLAN YEAR BAR ── */
+  #v-plan>div:nth-child(2){flex-wrap:wrap;gap:8px}
+
+  /* ── ADMIN ── */
+  #users-tb-wrap{display:none}
+  #users-mobile-cards{display:block}
+
+  /* ── MODALES: sheet desde abajo ── */
   .moverlay{align-items:flex-end;padding:0}
-  .modal{max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
-  .mfoot{padding:12px 16px}
-  .mbody{padding:14px 16px}
+  .modal{max-width:100%;width:100%;border-radius:20px 20px 0 0;max-height:88vh}
+  .modal.wide{max-width:100%}
+  .mhead{padding:14px 16px 10px}
+  .mbody{padding:12px 16px;gap:12px}
+  .mfoot{padding:12px 16px;gap:8px}
+  .mfoot .btn{flex:1;justify-content:center}
+  .fg{margin-bottom:0}
+  .fi{font-size:14px;padding:10px 12px}
 
-  /* ── BOTONES ── */
+  /* ── BOTONES generales ── */
   .btn{font-size:12px;padding:7px 12px}
+  .btn svg{width:13px;height:13px}
 
   /* ── LOGIN ── */
-  .lcard{padding:28px 22px;margin:12px;border-radius:18px}
-  .llogo img{width:64px;height:64px}
-  .llogo h1{font-size:17px}
-
-  /* ── NAV INFERIOR (bottom bar) ── */
-  #mobile-nav{display:flex}
+  #ls{align-items:flex-end;padding-bottom:0}
+  .lbg{display:none}
+  .lcard{width:100%;margin:0;border-radius:24px 24px 0 0;padding:32px 24px 40px;max-width:none;box-shadow:0 -20px 60px rgba(0,0,0,.3)}
+  .llogo{margin-bottom:20px}
+  .llogo img{width:60px;height:60px}
+  .llogo h1{font-size:16px}
+  .llogo p{font-size:10px}
+  .li{font-size:15px;padding:12px 14px;margin-bottom:10px}
+  .lb{padding:14px;font-size:14px;margin-top:4px}
 
   /* ── NOTIFICATION PANEL ── */
-  .npanel{width:calc(100vw - 24px);right:-10px}
+  .npanel{width:calc(100vw - 20px);right:-6px}
+  .npanel.on{display:block}
 
-  /* ── EXPORT/IMPORT BUTTONS ── */
-  #btn-export-db,#btn-import-db,#btn-load-db{font-size:11px;padding:6px 9px}
+  /* ── BOTTOM NAV ── */
+  #mobile-nav{display:flex}
 
-  /* ── TABLE ACCIONES ── */
-  .atable th,.atable td{padding:8px 8px;font-size:11px}
+  /* ── DASH PENDING items ── */
+  .npi{padding:10px 13px}
+  .ntxt strong{font-size:11px}
+  .ntxt span{font-size:10px}
 }
 
 @media(max-width:400px){
   .sgrid{grid-template-columns:1fr}
+  .bgrid{grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr}
   .sn{font-size:18px}
+  .bcard-name{font-size:12px}
 }
 
 /* ── MOBILE BOTTOM NAV ──────────────────────────────────────── */
@@ -538,7 +595,8 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
         <button class="back" id="back-admin"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Volver al Panel</button>
         <div class="sh"><span class="sht">Gestión de Usuarios</span><button class="btn btn-p" id="add-user-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar Usuario</button></div>
         <div style="background:#fff;border:1px solid var(--bdr);border-radius:13px;overflow:hidden">
-          <table class="atable"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead><tbody id="users-tb"></tbody></table>
+          <div id="users-tb-wrap"><table class="atable" id="users-table-desktop"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead><tbody id="users-tb"></tbody></table></div>
+        <div id="users-mobile-cards"></div>
         </div>
       </div>
     </div>
@@ -1485,6 +1543,42 @@ async function renderAdmin(){
         openMo("mo-user");
       });
     });
+    // ── Mobile user cards ──────────────────────────────────────────────────
+    var mobileCards = document.getElementById("users-mobile-cards");
+    if(mobileCards){
+      var cardsHtml = "";
+      users.forEach(function(u){
+        var isSelf = String(u.id)===String(currentUser.id);
+        cardsHtml += '<div class="ucard">'
+          +'<div class="ucard-top">'
+            +'<div class="ucard-av">'+u.name.charAt(0).toUpperCase()+'</div>'
+            +'<div class="ucard-info"><strong>'+esc(u.name)+'</strong><span>'+esc(u.username)+'</span></div>'
+            +'<span class="rtag '+(u.role==="admin"?"rt-a":"rt-u")+'">'+(u.role==="admin"?"Admin":"Usuario")+'</span>'
+          +'</div>'
+          +'<div class="ucard-btns">'
+            +'<button class="btn btn-s btn-edit-user" style="flex:1" data-uid="'+u.id+'" data-name="'+esc(u.name)+'" data-username="'+esc(u.username)+'" data-role="'+u.role+'">✏️ Editar</button>'
+            +'<button class="btn btn-d" style="flex:1" data-uid="'+u.id+'"'+(isSelf?' disabled title="No puedes eliminarte"':'')+'>🗑 Eliminar</button>'
+          +'</div>'
+        +'</div>';
+      });
+      mobileCards.innerHTML = cardsHtml;
+      mobileCards.querySelectorAll(".btn-d").forEach(function(el){
+        el.addEventListener("click",async function(){ if(!confirm("¿Eliminar usuario?")) return; try{ await api("DELETE","/api/users/"+this.getAttribute("data-uid")); toast("Eliminado","ok"); renderAdmin(); }catch(e){ toast(e.message,"err"); } });
+      });
+      mobileCards.querySelectorAll(".btn-edit-user").forEach(function(el){
+        el.addEventListener("click", function(){
+          _editUserId = this.getAttribute("data-uid");
+          document.getElementById("mo-user-title").textContent = "Editar Usuario";
+          document.getElementById("u-name").value = this.getAttribute("data-name")||"" ;
+          document.getElementById("u-user").value = this.getAttribute("data-username")||"" ;
+          document.getElementById("u-pass").value = "";
+          document.getElementById("u-role").value = this.getAttribute("data-role")||"user";
+          document.getElementById("u-pass-hint").style.display = "block";
+          document.getElementById("mu-save").textContent = "Guardar Cambios";
+          openMo("mo-user");
+        });
+      });
+    }
   }catch(e){ toast(e.message,"err"); }finally{ showLoad(false); }
 }
 
