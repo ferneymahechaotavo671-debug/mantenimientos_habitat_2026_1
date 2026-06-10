@@ -320,65 +320,60 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .ucard-btns{display:flex;gap:8px}
 
 @media(max-width:768px){
-  /* ═══ SHELL: fixed full-screen ═══ */
-  html{height:100%;overflow:hidden}
-  body{height:100%;overflow:hidden;position:fixed;width:100%;top:0;left:0}
   #sb{display:none!important}
+  html,body{margin:0;padding:0;overflow:hidden;height:100%}
   #app.on{
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    display:flex;flex-direction:column;
-    overflow:hidden
+    display:flex!important;
+    flex-direction:column!important;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    position:fixed;
+    top:0;left:0
   }
   #main{
-    flex:1;display:flex;flex-direction:column;
-    overflow:hidden;min-height:0
+    display:flex!important;
+    flex-direction:column!important;
+    flex:1!important;
+    min-height:0!important;
+    overflow:hidden!important
   }
   .topbar{
-    height:50px;padding:0 12px;
-    flex-shrink:0;z-index:10
+    height:50px!important;
+    padding:0 12px!important;
+    flex-shrink:0!important;
+    min-height:50px
   }
   .page{
-    flex:1;
-    overflow-y:auto;
-    overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
-    padding:12px 12px 80px;
-    min-height:0;
-    max-height:100%
+    flex:1!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding:12px 12px 80px 12px!important
   }
-  .view{display:none}
-  .view.on{display:block;width:100%}
-
-  /* ═══ TOPBAR ═══ */
+  .view{display:none!important}
+  .view.on{display:block!important;width:100%}
   .bc{font-size:12px;gap:3px}
   .bc-sep{display:none}
   .bc-cur{font-size:13px;font-weight:700}
-
-  /* ═══ DASHBOARD ═══ */
-  .sgrid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .sgrid{grid-template-columns:1fr 1fr!important;gap:8px;margin-bottom:12px}
   .scard{padding:10px 11px;gap:8px;border-radius:11px}
   .sicon{width:32px;height:32px;border-radius:7px;flex-shrink:0}
   .sicon svg{width:14px;height:14px}
   .sn{font-size:18px}
   .sl{font-size:10px}
-
-  /* ═══ SECTION HEADERS ═══ */
   .sh{flex-wrap:wrap;gap:8px;margin-bottom:12px}
   .sht{font-size:14px}
   .sh-actions{display:flex;flex-wrap:wrap;gap:6px;width:100%}
   .sh-actions .btn{flex:1;min-width:calc(50% - 3px);justify-content:center;font-size:11px;padding:8px 6px}
-
-  /* ═══ BUILDING CARDS ═══ */
-  .bgrid{grid-template-columns:1fr 1fr;gap:9px}
-  .bcard{padding:12px;border-radius:11px;overflow:visible}
+  .bgrid{grid-template-columns:1fr 1fr!important;gap:9px}
+  .bcard{padding:12px;border-radius:11px}
   .bcard-ic{width:30px;height:30px;margin-bottom:7px;border-radius:8px}
   .bcard-name{font-size:12px;margin-bottom:4px}
   .chip{font-size:9px;padding:2px 5px}
-
-  /* ═══ BACK BUTTON ═══ */
-  .back{font-size:12px;margin-bottom:10px;display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--teal);font-weight:600;cursor:pointer;padding:4px 0}
-
-  /* ═══ DETAIL HEADER ═══ */
+  .back{font-size:12px;margin-bottom:10px}
   .dh{padding:12px;gap:10px;border-radius:11px;margin-bottom:12px;flex-wrap:wrap}
   .dh-ic{width:38px;height:38px;border-radius:9px;flex-shrink:0}
   .dh-title{font-size:14px}
@@ -388,24 +383,18 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .dhs-l{font-size:9px}
   .dh>div:last-child{margin-left:0;width:100%;flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap}
   .dh>div:last-child .btn{flex:1;justify-content:center;font-size:11px;padding:7px 6px}
-
-  /* ═══ CRONOGRAMA ═══ */
   .crono-outer{border-radius:10px;overflow:hidden}
-  .crono-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;display:block}
+  .crono-scroll{overflow-x:auto!important;-webkit-overflow-scrolling:touch;width:100%;display:block}
   .crono-table{min-width:900px;width:auto}
   .crono-table .td-equipo{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08)}
   .crono-table thead th:first-child{position:sticky;left:0;background:#1e293b;z-index:3}
   .crono-year-bar{padding:8px 10px;flex-wrap:wrap;gap:6px}
   #crono-hint{display:none}
   .crono-footer{padding:10px 12px;flex-wrap:wrap;gap:8px}
-
-  /* ═══ PLANIFICADOR ═══ */
-  .pgrid{grid-template-columns:1fr 1fr;gap:8px}
+  .pgrid{grid-template-columns:1fr 1fr!important;gap:8px}
   .pmon-h{font-size:11px;padding:8px 10px}
   .pitem{font-size:10px;padding:6px 10px}
   .pdate{font-size:9px}
-
-  /* ═══ ADMIN / USERS ═══ */
   #users-tb-wrap{display:none!important}
   #users-mobile-cards{display:block!important;padding:8px}
   .ucard{background:#fff;border:1px solid var(--bdr);padding:13px;margin-bottom:9px;border-radius:12px}
@@ -415,10 +404,8 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .ucard-info span{display:block;font-size:11px;color:var(--mu)}
   .ucard-btns{display:flex;gap:8px}
   .ucard-btns .btn{flex:1;justify-content:center;font-size:13px;padding:11px 8px}
-
-  /* ═══ MODALES bottom sheet ═══ */
   .moverlay{align-items:flex-end;padding:0}
-  .modal,.modal.wide{width:100%;max-width:100%;border-radius:20px 20px 0 0;max-height:88vh;max-height:88dvh}
+  .modal,.modal.wide{width:100%;max-width:100%;border-radius:20px 20px 0 0;max-height:88vh}
   .mhead{padding:14px 16px 10px}
   .mbody{padding:12px 16px}
   .mfoot{padding:12px 16px;gap:8px}
@@ -426,14 +413,10 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .fi{font-size:16px;padding:12px 13px}
   .fgrid{grid-template-columns:1fr}
   .fg{margin-bottom:0}
-
-  /* ═══ BOTONES ═══ */
   .btn{font-size:12px;padding:7px 10px}
   #btn-export-db span,#btn-import-db span,#btn-load-db span{display:none}
   #btn-export-db,#btn-import-db,#btn-load-db{padding:8px;min-width:36px;justify-content:center}
   #btn-export-db svg,#btn-import-db svg,#btn-load-db svg{width:16px;height:16px;margin:0}
-
-  /* ═══ LOGIN ═══ */
   #ls{align-items:flex-end}
   .lbg{display:none}
   .lcard{width:100%;max-width:100%;border-radius:22px 22px 0 0;padding:28px 20px 44px;box-shadow:0 -16px 50px rgba(0,0,0,.45)}
@@ -443,21 +426,14 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .llogo p{font-size:9px}
   .li{padding:13px 14px;font-size:16px}
   .lb{padding:14px;font-size:14px}
-
-  /* ═══ NOTIFICACIONES ═══ */
   .npanel{width:calc(100vw - 16px);right:0}
-
-  /* ═══ TOAST ═══ */
   #toast{bottom:76px;left:12px;right:12px;max-width:none}
-
-  /* ═══ BOTTOM NAV ═══ */
-  #mobile-nav{display:flex}
+  #mobile-nav{display:flex!important}
 }
-
 @media(max-width:400px){
-  .sgrid{grid-template-columns:1fr}
-  .bgrid{grid-template-columns:1fr}
-  .pgrid{grid-template-columns:1fr}
+  .sgrid{grid-template-columns:1fr!important}
+  .bgrid{grid-template-columns:1fr!important}
+  .pgrid{grid-template-columns:1fr!important}
 }
 
 /* ── MOBILE BOTTOM NAV ──────────────────────────────────────── */
