@@ -143,6 +143,7 @@ h1,h2,h3,h4{font-family:"Syne",sans-serif}
 
 /* ─── CRONOGRAMA TABLE (imagen de referencia) ────────────────── */
 .crono-outer{background:#fff;border:1px solid var(--bdr);border-radius:14px;overflow:hidden;margin-bottom:0}
+.crono-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
 .crono-year-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--bdr)}
 .crono-year-bar span{font-size:16px;font-weight:800;min-width:48px;text-align:center;color:var(--ink)}
 .crono-table{width:100%;border-collapse:collapse;min-width:1000px}
@@ -318,115 +319,125 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .ucard-btns{display:flex;gap:8px}
 
 @media(max-width:768px){
-  /* ── SIDEBAR ── */
+  /* SIDEBAR */
   #sb{display:none!important}
 
-  /* ── APP & MAIN ── */
+  /* APP */
   #app{flex-direction:column}
   #main{height:100%;overflow:hidden}
 
-  /* ── TOPBAR ── */
+  /* TOPBAR */
   .topbar{padding:0 14px;height:50px;gap:8px}
-  .bc{font-size:11px;gap:4px}
-  .bc-sep,.bc-link{display:none}
-  .bc-cur{color:var(--ink);font-weight:700;font-size:13px}
+  .bc{font-size:12px;gap:4px}
+  .bc-sep{display:none}
+  .bc-link{font-size:11px}
+  .bc-cur{font-size:13px;font-weight:700}
 
-  /* ── PAGE ── */
-  .page{padding:12px 12px 80px}
+  /* PAGE */
+  .page{padding:12px 12px 80px 12px}
 
-  /* ── GREETING / DASHBOARD ── */
-  .sgrid{grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
-  .scard{padding:12px 13px;gap:10px}
-  .sn{font-size:20px}.sl{font-size:10px}
-  .sicon{width:36px;height:36px;border-radius:8px}
-  .sicon svg{width:16px;height:16px}
-  #v-dash .sh{margin-bottom:12px}
+  /* DASHBOARD */
+  .sgrid{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+  .scard{padding:11px 12px;gap:9px}
+  .sicon{width:34px;height:34px;border-radius:8px}
+  .sicon svg{width:15px;height:15px}
+  .sn{font-size:19px}
+  .sl{font-size:10px}
+  #v-dash>div:first-child h2{font-size:17px}
 
-  /* ── BUILDING CARDS ── */
-  .bgrid{grid-template-columns:1fr 1fr;gap:10px}
-  .bcard{padding:14px}
-  .bcard-ic{width:32px;height:32px;margin-bottom:8px}
+  /* SECTION HEADERS */
+  .sht{font-size:14px}
+  .sh{gap:8px}
+
+  /* BUILDING CARDS */
+  .bgrid{grid-template-columns:1fr 1fr;gap:9px}
+  .bcard{padding:13px}
+  .bcard-ic{width:30px;height:30px;margin-bottom:7px}
+  .bcard-ic svg{width:15px;height:15px}
   .bcard-name{font-size:12px;margin-bottom:5px}
+  .chip{font-size:9px;padding:2px 5px}
 
-  /* ── PANEL HEADERS ── */
-  .sh{flex-direction:column;align-items:flex-start;gap:8px}
-  .sh>div{display:flex;flex-wrap:wrap;gap:6px;width:100%}
-  .sh>div .btn{flex:1;min-width:0;justify-content:center;font-size:11px;padding:7px 8px}
-  .sht{font-size:15px}
+  /* BACK BUTTON */
+  .back{font-size:12px;margin-bottom:12px}
 
-  /* ── DETAIL HEADER ── */
-  .dh{padding:12px 14px;gap:10px;flex-wrap:wrap}
+  /* DETAIL HEADER */
+  .dh{padding:12px 14px;gap:10px}
   .dh-ic{width:40px;height:40px;border-radius:10px}
-  .dh-ic svg{width:20px;height:20px}
-  .dh-title{font-size:14px}.dh-sub{font-size:11px}
-  .dh-stats{display:flex;gap:14px;margin-left:0;width:100%;padding-top:4px;border-top:1px solid var(--bdr)}
-  .dhs-n{font-size:17px}.dhs-l{font-size:10px}
+  .dh-ic svg{width:18px;height:18px}
+  .dh-title{font-size:14px}
+  .dh-sub{font-size:11px}
+  .dh-stats{margin-left:0;gap:14px;padding-top:6px;border-top:1px solid var(--bdr);flex-basis:100%}
+  .dhs-n{font-size:16px}
+  .dhs-l{font-size:9px}
+  /* Action buttons in detail header */
+  .dh>div:last-child{margin-left:0;width:100%;flex-basis:100%}
+  .dh>div:last-child .btn{flex:1;justify-content:center;font-size:11px;padding:7px 8px}
 
-  /* ── BACK BUTTON ── */
-  .back{font-size:12px;margin-bottom:12px;padding:6px 0}
+  /* CRONOGRAMA - full horizontal scroll */
+  .crono-outer{border-radius:10px}
+  .crono-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .crono-table{min-width:960px}
+  /* Sticky first column */
+  .crono-table .td-equipo{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 5px rgba(0,0,0,.07)}
+  .crono-table thead th:first-child{position:sticky;left:0;background:#1e293b;z-index:3}
+  .crono-year-bar{padding:8px 11px;flex-wrap:wrap;gap:6px}
+  .crono-footer{padding:10px 12px;flex-wrap:wrap;gap:8px}
+  .crono-footer .add-row-btn{font-size:12px}
+  /* Hint text smaller on mobile */
+  .crono-year-bar span[style*="color:var(--mu)"]{display:none}
 
-  /* ── CRONOGRAMA ── */
-  .crono-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
-  .crono-table{min-width:980px}
-  .crono-year-bar{padding:8px 12px}
-  .crono-year-bar span{font-size:14px}
-  .crono-footer{padding:10px 12px;flex-direction:column;align-items:flex-start;gap:8px}
-  .crono-footer .btn{font-size:11px;padding:6px 10px}
-  /* Sticky first column for cronograma on scroll */
-  .crono-table .td-equipo{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.06)}
-  .crono-table thead th:first-child{position:sticky;left:0;background:#f8fafc;z-index:3}
-
-  /* ── PLANIFICADOR ── */
-  .pgrid{grid-template-columns:1fr 1fr;gap:10px}
-  .pmon-h{font-size:11px;padding:9px 11px}
-  .pitem{padding:7px 11px;font-size:10px}
-  #v-plan .sh{margin-bottom:12px}
+  /* PLANIFICADOR */
+  .pgrid{grid-template-columns:1fr 1fr;gap:9px}
+  .pmon{border-radius:10px}
+  .pmon-h{font-size:11px;padding:8px 10px}
+  .pitem{font-size:10px;padding:6px 10px}
+  .pdate{font-size:9px}
   #v-plan .back{margin-bottom:12px}
 
-  /* ── PLAN YEAR BAR ── */
-  #v-plan>div:nth-child(2){flex-wrap:wrap;gap:8px}
-
-  /* ── ADMIN ── */
+  /* ADMIN USERS */
   #users-tb-wrap{display:none}
   #users-mobile-cards{display:block}
+  .ucard{border-radius:12px;padding:13px;margin-bottom:9px}
+  .ucard-info strong{font-size:13px}
+  .ucard-info span{font-size:11px}
+  .ucard-btns .btn{font-size:12px;padding:8px 10px}
 
-  /* ── MODALES: sheet desde abajo ── */
+  /* MODALS - bottom sheet */
   .moverlay{align-items:flex-end;padding:0}
-  .modal{max-width:100%;width:100%;border-radius:20px 20px 0 0;max-height:88vh}
+  .modal{max-width:100%;width:100%;border-radius:20px 20px 0 0;max-height:90vh}
   .modal.wide{max-width:100%}
-  .mhead{padding:14px 16px 10px}
-  .mbody{padding:12px 16px;gap:12px}
+  .mhead{padding:16px 16px 10px}
+  .mbody{padding:14px 16px}
   .mfoot{padding:12px 16px;gap:8px}
-  .mfoot .btn{flex:1;justify-content:center}
+  .mfoot .btn{flex:1;justify-content:center;padding:11px}
+  .fi{font-size:15px;padding:11px 13px}
+  .fl{font-size:11px}
   .fg{margin-bottom:0}
-  .fi{font-size:14px;padding:10px 12px}
 
-  /* ── BOTONES generales ── */
-  .btn{font-size:12px;padding:7px 12px}
+  /* BUTTONS */
+  .btn{font-size:12px;padding:7px 11px}
   .btn svg{width:13px;height:13px}
 
-  /* ── LOGIN ── */
-  #ls{align-items:flex-end;padding-bottom:0}
+  /* LOGIN - bottom sheet */
+  #ls{align-items:flex-end}
   .lbg{display:none}
-  .lcard{width:100%;margin:0;border-radius:24px 24px 0 0;padding:32px 24px 40px;max-width:none;box-shadow:0 -20px 60px rgba(0,0,0,.3)}
-  .llogo{margin-bottom:20px}
-  .llogo img{width:60px;height:60px}
-  .llogo h1{font-size:16px}
-  .llogo p{font-size:10px}
-  .li{font-size:15px;padding:12px 14px;margin-bottom:10px}
-  .lb{padding:14px;font-size:14px;margin-top:4px}
+  .lcard{width:100%;border-radius:24px 24px 0 0;padding:30px 22px 44px;max-width:none;box-shadow:0 -20px 50px rgba(0,0,0,.4)}
+  .llogo img{width:64px;height:64px}
+  .llogo h1{font-size:17px}
+  .llogo p{font-size:9px}
+  .li{font-size:15px;padding:12px 14px}
+  .lb{padding:14px;font-size:14px;letter-spacing:1px}
 
-  /* ── NOTIFICATION PANEL ── */
-  .npanel{width:calc(100vw - 20px);right:-6px}
-  .npanel.on{display:block}
+  /* NOTIFICATION PANEL */
+  .npanel{width:calc(100vw - 20px);right:-2px}
 
-  /* ── BOTTOM NAV ── */
+  /* BOTTOM NAV */
   #mobile-nav{display:flex}
 
-  /* ── DASH PENDING items ── */
-  .npi{padding:10px 13px}
-  .ntxt strong{font-size:11px}
-  .ntxt span{font-size:10px}
+  /* EXPORT BUTTONS compact */
+  #btn-export-db span,#btn-import-db span,#btn-load-db span{display:none}
+  #btn-export-db svg,#btn-import-db svg,#btn-load-db svg{width:16px;height:16px}
+  #btn-export-db,#btn-import-db,#btn-load-db{padding:7px 9px;min-width:34px;justify-content:center}
 }
 
 @media(max-width:400px){
@@ -434,7 +445,6 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .bgrid{grid-template-columns:1fr}
   .pgrid{grid-template-columns:1fr}
   .sn{font-size:18px}
-  .bcard-name{font-size:12px}
 }
 
 /* ── MOBILE BOTTOM NAV ──────────────────────────────────────── */
@@ -518,7 +528,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 
       <!-- BUILDINGS -->
       <div class="view" id="v-bldgs">
-        <div class="sh" style="flex-wrap:wrap;gap:8px"><span class="sht">Copropiedades</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center"><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button><button class="btn btn-export-db" id="btn-export-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Exportar BD</button><button class="btn btn-import-db" id="btn-import-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4v12"/></svg>Importar BD</button><button class="btn btn-load-db" id="btn-load-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Cargar Actuales</button><input type="file" id="import-file-input" accept=".json,.zip" style="display:none"></div></div>
+        <div class="sh" style="flex-wrap:wrap;gap:8px"><span class="sht">Copropiedades</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center"><button class="btn btn-p" id="add-bldg-btn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Agregar</button><button class="btn btn-export-db" id="btn-export-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg><span>Exportar BD</span></button><button class="btn btn-import-db" id="btn-import-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4v12"/></svg><span>Importar BD</span></button><button class="btn btn-load-db" id="btn-load-db" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>Cargar Actuales</span></button><input type="file" id="import-file-input" accept=".json,.zip" style="display:none"></div></div>
         <div class="bgrid" id="bldgs-grid"></div>
       </div>
 
