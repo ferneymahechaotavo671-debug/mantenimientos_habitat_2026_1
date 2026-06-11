@@ -1,5 +1,5 @@
 // ── v23 — cambia este número con cada deploy para forzar actualización ──
-const CACHE = 'mantenimientos-v24';
+const CACHE = 'mantenimientos-v27';
 
 self.addEventListener('install', e => {
   // Tomar control inmediatamente sin esperar
