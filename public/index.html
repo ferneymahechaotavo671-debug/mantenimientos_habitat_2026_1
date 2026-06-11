@@ -2,17 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-  <meta name="application-name" content="MANTENIMIENTOS">
-  <meta name="theme-color" content="#0d9488">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MANTENIMIENTOS">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MANTENIMIENTOS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -282,13 +272,6 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .ucard-info span{display:block;font-size:11px;color:var(--mu)}
 .ucard-btns{display:flex;gap:8px}
 
-/* MOBILE NAV (hidden on desktop) */
-#mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:900;background:linear-gradient(180deg,#0d1f1e,#0a1817);border-top:1px solid rgba(255,255,255,.08);padding:0 0 env(safe-area-inset-bottom,0)}
-.mnav-inner{display:flex;align-items:stretch}
-.mni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;color:rgba(255,255,255,.38);font-size:9px;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit;gap:3px;text-transform:uppercase}
-.mni svg{width:19px;height:19px}
-.mni.on{color:var(--tg)}
-.mni:active{background:rgba(20,184,166,.1)}
 
 /* ══════════ MOBILE ══════════ */
 @media(max-width:768px){
@@ -302,8 +285,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   }
   #main{flex:1!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;min-height:0!important}
   .topbar{flex-shrink:0!important;height:50px!important;padding:0 12px!important}
-  .page{flex:1!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;padding:12px 12px 76px!important}
-  #mobile-nav{display:block!important}
+  .page{flex:1!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;padding:12px!important}
   #toast{bottom:80px!important;left:10px!important;right:10px!important;max-width:none!important}
 
   /* Topbar */
@@ -815,8 +797,7 @@ function startApp(){
   document.getElementById("sb-role").textContent=currentUser.role==="admin"?"Administrador":"Usuario";
   document.getElementById("n-admin").style.display=currentUser.role==="admin"?"flex":"none";
   // Show mobile nav
-  // mobile-nav visibility is handled by CSS media query
-  document.getElementById("mn-admin").style.display=currentUser.role==="admin"?"flex":"none";
+
   document.getElementById("add-bldg-btn").style.display=currentUser.role==="admin"?"inline-flex":"none";
   var isAdm=currentUser.role==="admin";
   document.getElementById("btn-export-db").style.display=isAdm?"inline-flex":"none";
@@ -835,9 +816,6 @@ function startApp(){
 function goTo(view){
   ["dash","bldgs","detail","plan","admin"].forEach(function(v){ var e=document.getElementById("v-"+v); if(e) e.classList.remove("on"); });
   ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("n-"+v); if(e) e.classList.remove("on"); });
-  // Sync mobile nav active state
-  ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("mn-"+v); if(e) e.classList.remove("on"); });
-  var mnActive=document.getElementById("mn-"+view); if(mnActive) mnActive.classList.add("on");
   var vEl=document.getElementById("v-"+view); if(vEl) vEl.classList.add("on");
   var nEl=document.getElementById("n-"+view); if(nEl) nEl.classList.add("on");
   if(view==="dash"){ setBc([{l:"Panel Principal"}]); renderDashboard(); }
@@ -859,9 +837,6 @@ async function fetchAndOpen(bidStr){
 function showDetail(){
   ["dash","bldgs","detail","plan","admin"].forEach(function(v){ var e=document.getElementById("v-"+v); if(e) e.classList.remove("on"); });
   ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("n-"+v); if(e) e.classList.remove("on"); });
-  // Sync mobile nav active state
-  ["dash","bldgs","plan","admin"].forEach(function(v){ var e=document.getElementById("mn-"+v); if(e) e.classList.remove("on"); });
-  var mnActive=document.getElementById("mn-"+view); if(mnActive) mnActive.classList.add("on");
   document.getElementById("n-bldgs").classList.add("on");
   document.getElementById("v-detail").classList.add("on");
   setBc([{l:"Panel",f:"dash"},{l:"Copropiedades",f:"bldgs"},{l:currentBuilding.name}]);
@@ -2059,31 +2034,6 @@ function checkSemesterExport(){
   </div>
 </div>
 
-<!-- MOBILE BOTTOM NAV -->
-<nav id="mobile-nav">
-  <div class="mnav-inner">
-    <button class="mni" id="mn-dash" onclick="goTo('dash')">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-      Inicio
-    </button>
-    <button class="mni" id="mn-bldgs" onclick="goTo('bldgs')">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4v4m-5 4h1m4 0h1"/></svg>
-      Coprop.
-    </button>
-    <button class="mni" id="mn-plan" onclick="goTo('plan')">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Plan.
-    </button>
-    <button class="mni" id="mn-admin" style="display:none" onclick="goTo('admin')">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      Admin
-    </button>
-    <button class="mni" id="mn-logout" onclick="document.querySelector('.logob').click()">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-      Salir
-    </button>
-  </div>
-</nav>
 
 <!-- MODAL EXPORTACIÓN SEMESTRAL -->
 <div id="mo-semester-export">
@@ -2098,14 +2048,5 @@ function checkSemesterExport(){
   </div>
 </div>
 
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('/sw.js')
-      .then(function(reg){ console.log('SW registrado:', reg.scope); })
-      .catch(function(err){ console.warn('SW error:', err); });
-  });
-}
-</script>
 </body>
 </html>
