@@ -377,39 +377,37 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .bgrid{grid-template-columns:1fr!important}
   .pgrid{grid-template-columns:1fr!important}
 }
-/* ── GANTT CHART ──────────────────────────────────────────────── */
-.gantt-wrap{background:#fff;border:1px solid var(--bdr);border-radius:14px;overflow:hidden}
-.gantt-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--ink2);border-bottom:1px solid rgba(255,255,255,.07)}
-.gantt-title{color:#fff;font-size:13px;font-weight:700;letter-spacing:.3px}
-.gantt-year-lbl{color:var(--tg);font-size:13px;font-weight:700}
-.gantt-body{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.gantt-table{width:100%;border-collapse:collapse;min-width:700px}
-.gantt-table th{background:#f8fafc;font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;padding:7px 0;text-align:center;border-right:1px solid var(--bdr);border-bottom:2px solid var(--bdr)}
-.gantt-table th.gt-name{text-align:left;padding-left:16px;min-width:170px;max-width:170px;border-right:2px solid var(--bdr)}
-.gantt-table tbody tr{border-bottom:1px solid #f1f5f9;transition:background .12s}
-.gantt-table tbody tr:hover{background:#f8fafc}
-.gantt-table tbody tr:last-child{border-bottom:none}
-.gantt-table td{padding:0;border-right:1px solid #f1f5f9;height:36px;vertical-align:middle}
-.gantt-table td.gt-name{padding:0 12px 0 16px;font-size:11px;font-weight:700;color:var(--ink);border-right:2px solid var(--bdr);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
-.gantt-table td.gt-name.is-acta{color:#a78bfa}
-.gantt-cell{width:100%;height:100%;display:flex;align-items:center;justify-content:center;min-height:36px}
-.gantt-bar{width:88%;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;letter-spacing:.3px}
-.gantt-bar.done{background:linear-gradient(90deg,#16a34a,#15803d);color:#fff;box-shadow:0 2px 6px rgba(22,163,74,.3)}
-.gantt-bar.planned{background:linear-gradient(90deg,#4ade80,#86efac);color:#166534}
-.gantt-bar.overdue{background:linear-gradient(90deg,#dc2626,#b91c1c);color:#fff;box-shadow:0 2px 6px rgba(220,38,38,.3)}
-.gantt-bar.acta-env{background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;box-shadow:0 2px 6px rgba(124,58,237,.3)}
-.gantt-bar.acta-rec{background:linear-gradient(90deg,#0ea5e9,#0284c7);color:#fff}
-.gantt-bar.empty{background:transparent}
-.gantt-today{background:rgba(13,148,136,.06)!important}
-.gantt-legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 18px;border-top:1px solid var(--bdr);background:#fafafa}
-.gantt-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu);font-weight:500}
-.gantt-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-@media(max-width:768px){
-  .gantt-table th.gt-name{min-width:120px;max-width:120px}
-  .gantt-table td.gt-name{max-width:120px;font-size:10px}
-  .gantt-bar{height:16px;font-size:8px}
-  .gantt-table td{height:30px}
-}
+/* ── DASHBOARD CUMPLIMIENTO ─────────────────────────────────────── */
+.prog-wrap{background:#fff;border:1px solid var(--bdr);border-radius:14px;overflow:hidden;margin-top:18px}
+.prog-header{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:var(--ink2)}
+.prog-title{color:#fff;font-size:13px;font-weight:700;letter-spacing:.3px}
+.prog-year{color:var(--tg);font-size:13px;font-weight:700}
+.prog-pct-global{color:#fff;font-size:22px;font-weight:800;margin-left:auto;margin-right:20px}
+.prog-pct-lbl{color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:1px;display:block;text-align:right}
+/* Month labels row */
+.prog-months{display:grid;align-items:center;padding:8px 16px 4px;border-bottom:1px solid var(--bdr);background:#fafafa}
+.prog-months span{font-size:9px;font-weight:700;color:var(--mu);text-align:center;text-transform:uppercase;letter-spacing:.4px}
+.prog-months span.pm-cur{color:var(--teal);font-weight:800}
+/* Each equipment row */
+.prog-row{display:grid;align-items:center;padding:7px 16px;border-bottom:1px solid #f8fafc;gap:0;transition:background .12s}
+.prog-row:hover{background:#f8fafc}
+.prog-row:last-child{border-bottom:none}
+.prog-name{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+/* The bar area for this row */
+.prog-bar-area{position:relative;height:22px;border-radius:6px;background:#f1f5f9;overflow:hidden}
+/* Continuous filled bar (green gradient) */
+.prog-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;background:linear-gradient(90deg,#16a34a,#4ade80);transition:width .6s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.prog-fill-pct{font-size:9px;font-weight:800;color:#fff;white-space:nowrap}
+/* Miss markers */
+.prog-misses{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.prog-miss{position:absolute;top:0;height:100%;background:rgba(220,38,38,.85);display:flex;align-items:center;justify-content:center}
+.prog-miss-lbl{font-size:8px;font-weight:700;color:#fff;writing-mode:horizontal-tb}
+/* Month grid lines on bar */
+.prog-grid-line{position:absolute;top:0;height:100%;width:1px;background:rgba(255,255,255,.5);pointer-events:none}
+/* Stats footer */
+.prog-footer{padding:10px 18px;border-top:1px solid var(--bdr);background:#fafafa;display:flex;gap:20px;flex-wrap:wrap}
+.prog-stat{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mu)}
+.prog-stat-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -537,13 +535,23 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
           </div>
         </div>
 
-        <!-- GANTT CHART -->
-        <div class="gantt-wrap" id="gantt-wrap" style="margin-top:18px">
-          <div class="gantt-header">
-            <span class="gantt-title">📊 Cronograma Visual Anual</span>
-            <span class="gantt-year-lbl" id="gantt-year-lbl">2025</span>
+        <!-- DASHBOARD CUMPLIMIENTO -->
+        <div class="prog-wrap" id="prog-wrap">
+          <div class="prog-header">
+            <span class="prog-title">📊 Cumplimiento de Mantenimientos</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;margin-left:auto">
+              <span class="prog-pct-global" id="prog-pct-global">—</span>
+              <span class="prog-pct-lbl">Cumplimiento anual</span>
+            </div>
+            <span class="prog-year" id="prog-year-lbl" style="margin-left:16px"></span>
           </div>
-          <div class="gantt-body" id="gantt-body"></div>
+          <div class="prog-months" id="prog-months"></div>
+          <div id="prog-rows"></div>
+          <div class="prog-footer">
+            <div class="prog-stat"><div class="prog-stat-dot" style="background:linear-gradient(90deg,#16a34a,#4ade80)"></div>Mantenimiento realizado</div>
+            <div class="prog-stat"><div class="prog-stat-dot" style="background:rgba(220,38,38,.85)"></div>No realizado ese mes</div>
+            <div class="prog-stat"><div class="prog-stat-dot" style="background:#f1f5f9;border:1px solid var(--bdr)"></div>Sin registros aún</div>
+          </div>
         </div>
       </div>
 
@@ -1753,141 +1761,178 @@ function replaceFile(btn){
   inp.click();
 }
 
-// ── GANTT CHART ──────────────────────────────────────────────────────────────
+// ── DASHBOARD CUMPLIMIENTO ───────────────────────────────────────────────────
 function renderGantt(){
-  var body = document.getElementById("gantt-body");
-  var yearLbl = document.getElementById("gantt-year-lbl");
-  if(!body) return;
+  var monthsEl  = document.getElementById("prog-months");
+  var rowsEl    = document.getElementById("prog-rows");
+  var pctEl     = document.getElementById("prog-pct-global");
+  var yearEl    = document.getElementById("prog-year-lbl");
+  if(!monthsEl || !rowsEl) return;
 
-  var now = new Date();
-  var nowYear = now.getFullYear();
-  var nowMonth = now.getMonth() + 1;
+  var now       = new Date();
+  var nowYear   = now.getFullYear();
+  var nowMonth  = now.getMonth() + 1;
+  var MONTHS    = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 
-  yearLbl.textContent = calYear;
+  yearEl.textContent = calYear;
 
-  var MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+  // How many months are "active" this year (up to current month if same year)
+  var activeMos = (calYear < nowYear) ? 12 : (calYear === nowYear ? nowMonth : 0);
 
-  // Build header
-  var thead = '<thead><tr><th class="gt-name">EQUIPO / SERVICIO</th>';
+  // ── Month headers row ──────────────────────────────────────────────────────
+  // Grid: name col (160px) + 12 equal cols
+  var gridCols = "160px repeat(12, 1fr)";
+  monthsEl.style.gridTemplateColumns = gridCols;
+  var mHtml = '<span style="font-size:9px;font-weight:700;color:var(--mu)">EQUIPO</span>';
   for(var mi=0;mi<12;mi++){
-    var isToday = (calYear===nowYear && (mi+1)===nowMonth);
-    thead += '<th style="width:6.5%;'+(isToday?'background:rgba(13,148,136,.12);color:var(--teal)':'')+'">' + MONTHS[mi] + '</th>';
+    var isCur = (calYear===nowYear && (mi+1)===nowMonth);
+    mHtml += '<span class="'+(isCur?"pm-cur":"")+'">'+MONTHS[mi]+'</span>';
   }
-  thead += '</tr></thead>';
+  monthsEl.innerHTML = mHtml;
 
-  // Build rows for maintenances
-  var tbody = '<tbody>';
+  // ── Calculate global % ────────────────────────────────────────────────────
+  var totalScheduled = 0, totalDone = 0;
 
   allMaints.forEach(function(m){
-    tbody += '<tr>';
-    tbody += '<td class="gt-name" title="'+esc(m.type)+'">'+esc(m.type)+'</td>';
-
-    for(var mo=1;mo<=12;mo++){
-      var rec = getRecord(m, calYear, mo);
-      var isToday = (calYear===nowYear && mo===nowMonth);
-      var tdClass = isToday ? ' class="gantt-today"' : '';
-
-      // Determine if this month should have a bar based on periodicidad + nextDate
-      var hasBar = false;
-      var barType = 'planned';
-      var barLabel = '';
-
-      if(rec){
-        hasBar = true;
-        if(rec.done){
-          barType = 'done';
-          barLabel = rec.doneDate ? rec.doneDate.split('-')[2] : '✓';
-        } else {
-          barType = 'overdue';
-          barLabel = '✕';
-        }
-      } else {
-        // Check if this month is scheduled based on periodicidad
-        var p = (m.periodicidad||'').toUpperCase();
-        var nd = m.next_date || m.nextDate || '';
-        if(nd){
-          var ndParts = nd.split('-');
-          if(ndParts.length===3){
-            var ndYear = parseInt(ndParts[0]);
-            var ndMonth = parseInt(ndParts[1]);
-            // Show planned bar if scheduled this month
-            if(ndYear===calYear && ndMonth===mo){
-              hasBar = true; barType = 'planned'; barLabel = '';
-            }
-          }
-        }
-        // Also show based on periodicidad pattern
-        if(!hasBar && p && p !== 'OTRO'){
-          var firstMonth = 1;
-          // Try to get first month from existing records or nextDate
-          if(nd){ var fp=nd.split('-'); if(fp.length>1) firstMonth=parseInt(fp[1])||1; }
-          var interval = 1;
-          if(p==='BIMESTRAL') interval=2;
-          else if(p==='TRIMESTRAL') interval=3;
-          else if(p==='CUATRIMESTRAL') interval=4;
-          else if(p==='SEMESTRAL') interval=6;
-          else if(p==='ANUAL'||p==='TRIENAL') interval=12;
-          if(interval<12){
-            // Show bar if mo matches the pattern
-            var diff = (mo - firstMonth + 12) % interval;
-            if(diff===0){ hasBar=true; barType='planned'; }
-          }
-        }
+    var interval = getInterval(m.periodicidad);
+    if(interval === 0) return;
+    for(var mo=1; mo<=activeMos; mo++){
+      if(isScheduled(m, calYear, mo, interval)){
+        totalScheduled++;
+        var rec = getRecord(m, calYear, mo);
+        if(rec && rec.done) totalDone++;
       }
-
-      tbody += '<td'+tdClass+'>';
-      if(hasBar){
-        tbody += '<div class="gantt-cell"><div class="gantt-bar '+barType+'">'+barLabel+'</div></div>';
-      } else {
-        tbody += '<div class="gantt-cell"><div class="gantt-bar empty"></div></div>';
-      }
-      tbody += '</td>';
     }
-    tbody += '</tr>';
   });
 
-  // Acta rows
-  if(allActas && allActas.length){
-    allActas.forEach(function(a){
-      tbody += '<tr>';
-      tbody += '<td class="gt-name is-acta" title="'+esc(a.tipo)+' #'+esc(a.numero||'')+'">'+esc(a.tipo)+' '+esc(a.numero||'')+'</td>';
-      for(var mo=1;mo<=12;mo++){
-        var isToday = (calYear===nowYear && mo===nowMonth);
-        var tdClass = isToday ? ' class="gantt-today"' : '';
-        var bar = '';
-        // Show acta-env bar on send month
-        if(a.fecha_envio){
-          var ep=a.fecha_envio.split('-');
-          if(ep.length===3 && parseInt(ep[0])===calYear && parseInt(ep[1])===mo){
-            bar = '<div class="gantt-cell"><div class="gantt-bar acta-env">ENV</div></div>';
-          }
+  var globalPct = totalScheduled > 0 ? Math.round(totalDone / totalScheduled * 100) : null;
+  pctEl.textContent = globalPct !== null ? globalPct + "%" : "—";
+  pctEl.style.color = globalPct === null ? "#fff" : globalPct >= 80 ? "#4ade80" : globalPct >= 50 ? "#fbbf24" : "#f87171";
+
+  // ── Build rows ────────────────────────────────────────────────────────────
+  var html = "";
+
+  allMaints.forEach(function(m){
+    var interval = getInterval(m.periodicidad);
+
+    // Collect month data
+    var months = [];
+    var doneCount = 0, missCount = 0, schedCount = 0;
+
+    for(var mo=1; mo<=12; mo++){
+      var sched  = isScheduled(m, calYear, mo, interval);
+      var rec    = getRecord(m, calYear, mo);
+      var isPast = (calYear < nowYear) || (calYear === nowYear && mo <= nowMonth);
+      var status = "empty"; // no scheduled, no record
+
+      if(sched){
+        schedCount++;
+        if(rec && rec.done){
+          status = "done";
+          doneCount++;
+        } else if(isPast && !rec){
+          status = "miss";
+          missCount++;
+        } else if(!isPast){
+          status = "future"; // scheduled but not yet
         }
-        // Show acta-rec bar on received month (may overlap - show received if same month)
-        if(a.fecha_recibido){
-          var rp=a.fecha_recibido.split('-');
-          if(rp.length===3 && parseInt(rp[0])===calYear && parseInt(rp[1])===mo){
-            bar = '<div class="gantt-cell"><div class="gantt-bar acta-rec">FIRM</div></div>';
-          }
-        }
-        if(!bar) bar = '<div class="gantt-cell"><div class="gantt-bar empty"></div></div>';
-        tbody += '<td'+tdClass+'>'+bar+'</td>';
+      } else if(rec && rec.done){
+        // recorded but not in schedule pattern (manual)
+        status = "done";
+        doneCount++;
+        schedCount++;
       }
-      tbody += '</tr>';
-    });
+      months.push({ mo: mo, status: status, sched: sched, rec: rec });
+    }
+
+    // % for this equipment
+    var rowPct = schedCount > 0 ? Math.round(doneCount / Math.max(schedCount - (months.filter(function(x){return x.status==="future";}).length), 1) * 100) : null;
+
+    // Build fill bar width based on done months out of active scheduled
+    var activeScheds = months.filter(function(x){ return x.status==="done" || x.status==="miss"; }).length;
+    var fillPct = activeScheds > 0 ? Math.round(doneCount / activeScheds * 100) : 0;
+
+    // Build miss segments (positioned as fractions of the bar)
+    var missSegs = "";
+    var missMonths = months.filter(function(x){ return x.status==="miss"; }).map(function(x){ return x.mo; });
+
+    if(missMonths.length > 0){
+      missMonths.forEach(function(mo){
+        // Position: (mo-1)/12 * 100%
+        var left  = ((mo - 1) / 12 * 100).toFixed(2);
+        var width = (1 / 12 * 100).toFixed(2);
+        missSegs += '<div class="prog-miss" style="left:'+left+'%;width:'+width+'%" title="No realizado: '+MONTHS[mo-1]+'"><span class="prog-miss-lbl">'+MONTHS[mo-1]+'</span></div>';
+      });
+    }
+
+    // Grid lines every month (subtle separators)
+    var gridLines = "";
+    for(var g=1; g<12; g++){
+      gridLines += '<div class="prog-grid-line" style="left:'+(g/12*100).toFixed(2)+'%"></div>';
+    }
+
+    // Fill width: proportional to months elapsed in year
+    var fillWidth = activeMos > 0 ? (doneCount / Math.max(activeMos,1) * 100).toFixed(1) : 0;
+    // But cap at actual progress
+    if(schedCount > 0){
+      fillWidth = (doneCount / schedCount * 100).toFixed(1);
+      // Only fill up to current month position
+      var maxFill = (activeMos / 12 * 100).toFixed(1);
+      if(parseFloat(fillWidth) > parseFloat(maxFill)) fillWidth = maxFill;
+    }
+
+    var pctLabel = rowPct !== null ? rowPct+"%" : "";
+    var pctColor = rowPct === null ? "" : rowPct >= 80 ? "#15803d" : rowPct >= 50 ? "#b45309" : "#b91c1c";
+
+    html += '<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
+    html +=   '<div class="prog-name" title="'+esc(m.type)+'">'+esc(m.type)
+             +(missCount>0 ? ' <span style="font-size:9px;color:var(--danger);font-weight:800">('+missCount+'✕)</span>' : '')
+             +'</div>';
+    html +=   '<div style="grid-column:2/14;position:relative">';
+    html +=     '<div class="prog-bar-area">';
+    html +=       gridLines;
+    html +=       '<div class="prog-fill" style="width:'+fillWidth+'%">';
+    if(pctLabel) html += '<span class="prog-fill-pct">'+pctLabel+'</span>';
+    html +=       '</div>';
+    html +=       missSegs;
+    html +=     '</div>';
+    html +=   '</div>';
+    html += '</div>';
+  });
+
+  if(!html) html = '<div style="padding:32px;text-align:center;color:var(--mu);font-size:13px">Sin equipos registrados</div>';
+  rowsEl.innerHTML = html;
+}
+
+// ── Helpers for renderGantt ───────────────────────────────────────────────────
+function getInterval(periodicidad){
+  var p = (periodicidad||"").toUpperCase();
+  if(p==="MENSUAL") return 1;
+  if(p==="BIMESTRAL") return 2;
+  if(p==="TRIMESTRAL") return 3;
+  if(p==="CUATRIMESTRAL") return 4;
+  if(p==="SEMESTRAL") return 6;
+  if(p==="ANUAL") return 12;
+  if(p==="TRIENAL") return 36;
+  return 0; // OTRO or empty
+}
+
+function isScheduled(m, year, mo, interval){
+  if(interval === 0) return false;
+  if(interval === 36) return (mo === 1); // trienal: just show Jan
+  if(interval >= 12) return (mo === 1);  // anual: Jan
+  // Use nextDate or first record to anchor the pattern
+  var anchor = 1;
+  var nd = m.next_date || m.nextDate || "";
+  if(nd){ var p=nd.split("-"); if(p.length>1){ anchor = parseInt(p[1])||1; } }
+  // Also check existing records to find first scheduled month
+  if(m.records && m.records.length){
+    var sorted = m.records.slice().sort(function(a,b){ return a.month-b.month; });
+    anchor = sorted[0].month;
   }
-
-  tbody += '</tbody>';
-
-  // Legend
-  var legend = '<div class="gantt-legend">'
-    +'<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:linear-gradient(90deg,#16a34a,#15803d)"></div>Realizado</div>'
-    +'<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:linear-gradient(90deg,#4ade80,#86efac)"></div>Programado</div>'
-    +'<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:linear-gradient(90deg,#dc2626,#b91c1c)"></div>No realizado</div>'
-    +'<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:linear-gradient(90deg,#7c3aed,#6d28d9)"></div>Acta enviada</div>'
-    +'<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:linear-gradient(90deg,#0ea5e9,#0284c7)"></div>Acta firmada</div>'
-    +'</div>';
-
-  body.innerHTML = '<table class="gantt-table">'+thead+tbody+'</table>'+legend;
+  // Check if mo fits the interval starting from anchor
+  var diff = ((mo - anchor) % interval + interval) % interval;
+  return diff === 0;
 }
 
 // ── EXPORT BD ────────────────────────────────────────────────────────────────
