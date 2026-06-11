@@ -344,9 +344,9 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
   .dhs-l{font-size:9px!important}
 
   /* Cronograma */
-  .crono-outer{border-radius:10px!important}
-  .crono-scroll{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;display:block!important}
-  .crono-table{min-width:900px!important}
+  .crono-outer{border-radius:10px!important;overflow:visible!important}
+  .crono-scroll{overflow-x:auto!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important;display:block!important;width:100%!important}
+  .crono-table{min-width:800px!important;table-layout:fixed}
   .crono-table .td-equipo{position:sticky!important;left:0!important;background:#fff!important;z-index:2!important;box-shadow:2px 0 4px rgba(0,0,0,.08)!important}
   .crono-table thead th:first-child{position:sticky!important;left:0!important;background:#1e293b!important;z-index:3!important}
   .crono-year-bar{padding:8px 10px!important;flex-wrap:wrap!important;gap:6px!important}
