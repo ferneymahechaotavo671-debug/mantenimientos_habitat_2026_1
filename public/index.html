@@ -1767,143 +1767,190 @@ function renderGantt(){
   var rowsEl   = document.getElementById("prog-rows");
   var pctEl    = document.getElementById("prog-pct-global");
   var yearEl   = document.getElementById("prog-year-lbl");
-  if(!monthsEl || !rowsEl) return;
+  if(!monthsEl||!rowsEl) return;
 
-  var now      = new Date();
-  var nowYear  = now.getFullYear();
-  var nowMonth = now.getMonth() + 1;
-  var MONTHS   = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-  var MFULL    = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var now     = new Date();
+  var nowYear = now.getFullYear();
+  var nowMo   = now.getMonth()+1;
+  var MONTHS  = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+  var MFULL   = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
   yearEl.textContent = calYear;
   var gridCols = "170px 1fr";
 
-  // Month headers
+  // ── Month headers ──────────────────────────────────────────────────────────
   monthsEl.style.gridTemplateColumns = gridCols;
-  var mHtml = '<span style="font-size:9px;font-weight:700;color:var(--mu)">EQUIPO</span>';
-  mHtml += '<div style="display:grid;grid-template-columns:repeat(12,1fr)">';
+  var mHtml = '<span style="font-size:9px;font-weight:700;color:var(--mu)">EQUIPO</span>'
+            + '<div style="display:grid;grid-template-columns:repeat(12,1fr)">';
   for(var mi=0;mi<12;mi++){
-    var isCur = (calYear===nowYear && (mi+1)===nowMonth);
-    mHtml += '<span class="'+(isCur?"pm-cur":"")+'">'+MONTHS[mi]+'</span>';
+    var isCur=(calYear===nowYear&&(mi+1)===nowMo);
+    mHtml+='<span class="'+(isCur?"pm-cur":"")+'">'+MONTHS[mi]+'</span>';
   }
-  mHtml += '</div>';
-  monthsEl.innerHTML = mHtml;
+  mHtml+='</div>';
+  monthsEl.innerHTML=mHtml;
 
-  // Global % — only months with actual records (done=true or done=false with ✕)
-  var totalRec = 0, totalDone = 0;
+  // ── Global % ───────────────────────────────────────────────────────────────
+  var gExpected=0, gDone=0;
   allMaints.forEach(function(m){
-    for(var mo=1; mo<=12; mo++){
-      var rec = getRecord(m, calYear, mo);
-      if(rec){ totalRec++; if(rec.done) totalDone++; }
-    }
+    var interval=pgInterval(m.periodicidad);
+    if(!interval) return;
+    var mos=pgScheduledMonths(m,calYear,interval,nowYear,nowMo);
+    gExpected+=mos.length;
+    mos.forEach(function(mo){
+      var rec=getRecord(m,calYear,mo);
+      if(rec&&rec.done) gDone++;
+    });
   });
-  var globalPct = totalRec > 0 ? Math.round(totalDone/totalRec*100) : null;
-  pctEl.textContent = globalPct !== null ? globalPct+"%" : "—";
-  pctEl.style.color = globalPct===null?"#fff":globalPct>=80?"#4ade80":globalPct>=50?"#fbbf24":"#f87171";
+  var gPct=gExpected>0?Math.round(gDone/gExpected*100):null;
+  pctEl.textContent=gPct!==null?gPct+"%":"—";
+  pctEl.style.color=gPct===null?"#fff":gPct>=80?"#4ade80":gPct>=50?"#fbbf24":"#f87171";
 
-  var html = "";
+  // ── Rows ───────────────────────────────────────────────────────────────────
+  var html="";
 
   allMaints.forEach(function(m){
-    // Only look at months with actual records
-    var recMonths = [];
-    for(var mo=1; mo<=12; mo++){
-      var rec = getRecord(m, calYear, mo);
-      if(rec) recMonths.push({ mo:mo, rec:rec });
-    }
-    if(recMonths.length === 0) return; // no records this year — skip
+    var interval=pgInterval(m.periodicidad);
+    if(!interval) return; // OTRO — skip
 
-    // Bar starts at first recorded month, ends at last recorded month
-    var firstMo = recMonths[0].mo;
-    var lastMo  = recMonths[recMonths.length-1].mo;
+    // Scheduled months for this year (only up to current month if same year)
+    var schedMos=pgScheduledMonths(m,calYear,interval,nowYear,nowMo);
+    if(!schedMos.length) return;
 
-    // Count done vs miss (✕) among recorded months only
-    var doneCount = 0;
-    var missMonths = [];
-    recMonths.forEach(function(x){
-      if(x.rec.done) doneCount++;
-      else missMonths.push(x); // ✕ months
+    var firstMo=schedMos[0];
+    var lastMo=schedMos[schedMos.length-1];
+
+    // Count done and miss among scheduled months
+    var doneCount=0;
+    var missMonths=[]; // {mo, rec}
+    schedMos.forEach(function(mo){
+      var rec=getRecord(m,calYear,mo);
+      if(rec&&rec.done){
+        doneCount++;
+      } else if(rec&&!rec.done){
+        // explicit ✕
+        missMonths.push({mo:mo,rec:rec});
+      }
+      // if no rec → not yet registered, not counted as miss
     });
-    var rowPct = Math.round(doneCount / recMonths.length * 100);
 
-    // Bar spans from firstMo to lastMo as % of 12
-    var barLeft  = ((firstMo-1)/12*100).toFixed(3);
-    var barWidth = ((lastMo-firstMo+1)/12*100).toFixed(3);
+    // % = done / total scheduled so far
+    var rowPct=Math.round(doneCount/schedMos.length*100);
 
-    // Red thin lines — only for ✕ months, positioned within the full 12-col area
-    // Each month column is 1/12 wide; center of month mo = (mo-0.5)/12
-    var redLines = "";
+    // Bar visual:
+    // The green fill covers from firstMo to lastMo proportionally
+    // Fill width = (doneCount / schedMos.length) * barWidth
+    var barLeft=((firstMo-1)/12*100).toFixed(3);
+    var barWidth=((lastMo-firstMo+1)/12*100).toFixed(3);
+    var fillPct=(doneCount/schedMos.length*100).toFixed(1);
+
+    // Red thin lines — only for explicit ✕ records
+    var redLines="";
     missMonths.forEach(function(x){
-      // Position as % of the full bar area (0-100%)
-      var centerPct = ((x.mo - 0.5) / 12 * 100).toFixed(3);
-      // Get scheduled date from record nextDate or equipment nextDate
-      var nd = (x.rec.nextDate||x.rec.next_date||m.next_date||m.nextDate||"");
-      var tip = "No realizado: "+MFULL[x.mo-1];
-      if(nd){ var p=nd.split("-"); if(p.length===3) tip += "  |  Programado: "+p[2]+"/"+MONTHS[parseInt(p[1])-1]+"/"+p[0]; }
-      // Line is positioned absolutely within the outer bar-area div (full width)
-      redLines += '<div title="'+tip+'" style="'
-        +'position:absolute;'
-        +'left:'+centerPct+'%;'
-        +'top:0;width:3px;height:100%;'
-        +'background:#ef4444;'
-        +'transform:translateX(-50%);'
-        +'z-index:5;cursor:help;'
-        +'box-shadow:0 0 5px rgba(239,68,68,.7)'
-        +'"></div>';
+      var centerPct=((x.mo-0.5)/12*100).toFixed(3);
+      var nd=(x.rec&&(x.rec.nextDate||x.rec.next_date))||m.next_date||m.nextDate||"";
+      var tip="No realizado: "+MFULL[x.mo-1];
+      if(nd){var p=nd.split("-");if(p.length===3) tip+="  |  Programado: "+p[2]+"/"+MONTHS[parseInt(p[1])-1]+"/"+p[0];}
+      redLines+='<div title="'+tip+'" style="'
+        +'position:absolute;left:'+centerPct+'%;top:0;'
+        +'width:3px;height:100%;background:#ef4444;'
+        +'transform:translateX(-50%);z-index:5;cursor:help;'
+        +'box-shadow:0 0 5px rgba(239,68,68,.7)"></div>';
     });
 
-    // Subtle month dividers inside the green bar
-    var dividers = "";
+    // Subtle dividers at each scheduled month boundary
+    var dividers="";
     for(var g=1;g<12;g++){
-      dividers += '<div style="position:absolute;left:'+(g/12*100).toFixed(2)+'%;top:0;width:1px;height:100%;background:rgba(255,255,255,.2);pointer-events:none"></div>';
+      dividers+='<div style="position:absolute;left:'+(g/12*100).toFixed(2)+'%;top:0;width:1px;height:100%;background:rgba(255,255,255,.2);pointer-events:none"></div>';
     }
 
-    var pctColor = rowPct>=80?"#15803d":rowPct>=50?"#b45309":"#b91c1c";
-
-    html += '<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
-    html +=   '<div class="prog-name" title="'+esc(m.type)+'">'+esc(m.type)+'</div>';
-    // Outer container = full 12 months width, gray background
-    html +=   '<div style="position:relative;height:22px;background:#f1f5f9;border-radius:6px;overflow:hidden">';
-    // Green bar: starts at barLeft, width barWidth
-    html +=     '<div style="'
-              +'position:absolute;'
-              +'left:'+barLeft+'%;'
-              +'width:'+barWidth+'%;'
-              +'top:0;height:100%;'
-              +'background:linear-gradient(90deg,#16a34a,#4ade80);'
-              +'border-radius:6px;'
-              +'overflow:hidden'
-              +'">';
-    html +=       dividers;
-    // Pct label inside green bar
-    html +=       '<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:800;color:#fff;white-space:nowrap;z-index:2">'+rowPct+'%</span>';
-    html +=     '</div>';
-    // Red lines go on top of everything, positioned in the outer container
-    html +=     redLines;
-    html +=   '</div>';
-    html += '</div>';
+    html+='<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
+    html+='<div class="prog-name" title="'+esc(m.type)+'">'+esc(m.type)
+         +(missMonths.length?' <span style="font-size:9px;color:var(--danger);font-weight:800">('+missMonths.length+'✕)</span>':'')
+         +'</div>';
+    // Full-width gray track
+    html+='<div style="position:relative;height:22px;background:#f1f5f9;border-radius:6px;overflow:hidden">';
+    // Gray "expected" zone from firstMo to lastMo
+    html+='<div style="position:absolute;left:'+barLeft+'%;width:'+barWidth+'%;top:0;height:100%;background:#e2e8f0;border-radius:6px"></div>';
+    // Green fill proportional to done/expected, anchored at firstMo
+    var greenWidth=(parseFloat(barWidth)*doneCount/schedMos.length).toFixed(3);
+    html+='<div style="position:absolute;left:'+barLeft+'%;width:'+greenWidth+'%;top:0;height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px;overflow:hidden">';
+    html+=dividers;
+    html+='</div>';
+    // Pct label
+    html+='<span style="position:absolute;right:'+(100-parseFloat(barLeft)-parseFloat(barWidth)+1)+'%;left:'+barLeft+'%;top:50%;transform:translateY(-50%);font-size:9px;font-weight:800;color:#166534;text-align:right;padding-right:6px;white-space:nowrap;z-index:4">'+rowPct+'%</span>';
+    // Red lines on top
+    html+=redLines;
+    html+='</div></div>';
   });
 
   if(!html){
-    html = '<div style="padding:32px;text-align:center;color:var(--mu);font-size:13px;font-style:italic">Registra mantenimientos en el calendario para ver el progreso</div>';
+    html='<div style="padding:32px;text-align:center;color:var(--mu);font-size:13px;font-style:italic">Registra mantenimientos en el calendario para ver el progreso</div>';
   }
-  rowsEl.innerHTML = html;
+  rowsEl.innerHTML=html;
 }
 
-function getInterval(periodicidad){
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function pgInterval(periodicidad){
   var p=(periodicidad||"").toUpperCase();
-  if(p==="MENSUAL")return 1;if(p==="BIMESTRAL")return 2;
-  if(p==="TRIMESTRAL")return 3;if(p==="CUATRIMESTRAL")return 4;
-  if(p==="SEMESTRAL")return 6;if(p==="ANUAL")return 12;
-  if(p==="TRIENAL")return 36;return 0;
+  if(p==="MENSUAL")return 1;
+  if(p==="BIMESTRAL")return 2;
+  if(p==="TRIMESTRAL")return 3;
+  if(p==="CUATRIMESTRAL")return 4;
+  if(p==="SEMESTRAL")return 6;
+  if(p==="ANUAL")return 12;
+  if(p==="TRIENAL")return 36;
+  return 0;
 }
-function isScheduled(m,year,mo,interval){
-  if(interval===0)return false;
-  if(interval>=12)return(mo===1);
-  var anchor=1;
+
+function pgScheduledMonths(m, year, interval, nowYear, nowMo){
+  // Returns array of months [1-12] that are scheduled this year
+  // For TRIENAL: only counts if the year matches a cycle (approximate)
+  if(interval===0) return [];
+  if(interval>=12){
+    // ANUAL: one occurrence per year — find which month
+    var anchor=pgAnchor(m);
+    if(interval===36){
+      // TRIENAL: only every 3 years — just show the anchor month
+      // Include it regardless (user tracks it manually)
+      var mo=anchor||1;
+      if(year===nowYear && mo>nowMo) return [];
+      return [mo];
+    }
+    // ANUAL
+    var mo=anchor||1;
+    if(year===nowYear && mo>nowMo) return [];
+    return [mo];
+  }
+  // For sub-annual: find anchor month, then all months matching the interval
+  var anchor=pgAnchor(m)||1;
+  var result=[];
+  for(var mo=anchor; mo<=12; mo+=interval){
+    if(year===nowYear && mo>nowMo) break; // don't count future months
+    result.push(mo);
+  }
+  // Also check months before anchor that fit (e.g. anchor=3,interval=6 → also month 9)
+  // Already handled by starting at anchor and stepping forward
+  return result;
+}
+
+function pgAnchor(m){
+  // Find the first month of the schedule for this equipment
+  // Priority: first done record, then nextDate, then 1
+  if(m.records&&m.records.length){
+    var sorted=m.records.slice().sort(function(a,b){return a.month-b.month;});
+    for(var i=0;i<sorted.length;i++){
+      if(sorted[i].done) return sorted[i].month;
+    }
+    return sorted[0].month;
+  }
   var nd=m.next_date||m.nextDate||"";
-  if(nd){var p=nd.split("-");if(p.length>1){anchor=parseInt(p[1])||1;}}
-  if(m.records&&m.records.length){var s=m.records.slice().sort(function(a,b){return a.month-b.month;});anchor=s[0].month;}
-  return(((mo-anchor)%interval+interval)%interval)===0;
+  if(nd){var p=nd.split("-");if(p.length>1)return parseInt(p[1])||1;}
+  return 1;
+}
+
+function getInterval(periodicidad){ return pgInterval(periodicidad); }
+function isScheduled(m,year,mo,interval){
+  return pgScheduledMonths(m,year,interval,year,12).indexOf(mo)>=0;
 }
 
 
