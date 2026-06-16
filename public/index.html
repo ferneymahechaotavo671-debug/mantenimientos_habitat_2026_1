@@ -1851,38 +1851,53 @@ function renderGantt(){
 
     // ── Evaluar cada segmento según periodicidad ──────────────────────────────
     var totalDone=0, totalMiss=0, totalSched=0;
-    var lastDoneMo=0; // último mes en que hubo un "done" real
-    var redLines="";  // líneas rojas verticales donde faltó
+    var lastDoneMo=0; // último mes (fin de segmento) con done=true
+    var redLines="";
 
-    segMonths.forEach(function(startMo){
+    // Encontrar el primer segmento con algún registro (done o no)
+    // Antes de ese primer registro, no se exige nada → no se marca rojo
+    var firstRegisteredSegIdx = -1;
+    for(var si=0; si<segMonths.length; si++){
+      var sm=segMonths[si];
+      var em=interval>0&&interval<12?Math.min(sm+interval-1,12):12;
+      for(var smo2=sm;smo2<=em;smo2++){ if(recMap[smo2]){firstRegisteredSegIdx=si;break;} }
+      if(firstRegisteredSegIdx>=0) break;
+    }
+
+    segMonths.forEach(function(startMo, idx){
       var endMo = interval>0 && interval<12 ? Math.min(startMo+interval-1,12) : 12;
       var isFuture = calYear>nowYear||(calYear===nowYear&&startMo>nowMo);
+      if(isFuture) return;
 
-      // Buscar registro real dentro de los meses del segmento
+      // Buscar registro real dentro del segmento
       var segRec=null;
       for(var smo=startMo;smo<=endMo;smo++){
         if(recMap[smo]){segRec=recMap[smo];break;}
       }
 
-      if(isFuture) return; // no contar ni marcar meses futuros
+      // Segmentos ANTES del primer registro → barra verde libre, sin exigencia
+      var beforeFirstRecord = firstRegisteredSegIdx<0 || idx<firstRegisteredSegIdx;
 
-      totalSched++;
       if(segRec && segRec.done){
         totalDone++;
-        if(endMo>lastDoneMo) lastDoneMo=endMo; // extiende la barra verde hasta el fin del segmento
+        totalSched++;
+        if(endMo>lastDoneMo) lastDoneMo=endMo;
+      } else if(beforeFirstRecord){
+        // Antes del primer registro: verde implícito, no penalizar
+        if(endMo>lastDoneMo) lastDoneMo=endMo;
       } else {
-        // No realizado (registro explícito ✕ o sin registro) → línea roja en el centro del segmento
+        // Después del primer registro y sin cumplir → rojo
         totalMiss++;
-        var centerMo = startMo + (endMo-startMo)/2; // centro del segmento en meses
+        totalSched++;
+        var centerMo = startMo + (endMo-startMo)/2;
         var centerPct = (centerMo/12*100).toFixed(3);
         var tipTxt = "No realizado: "+MFULL[startMo-1]+(endMo>startMo?" – "+MFULL[endMo-1]:"");
-        if(segRec&&!segRec.done && segRec.label) tipTxt+=" | "+segRec.label;
+        if(segRec&&!segRec.done&&segRec.label) tipTxt+=" | "+segRec.label;
         redLines+='<div title="'+esc(tipTxt)+'" style="'
           +'position:absolute;left:'+centerPct+'%;top:0;'
           +'width:3px;height:100%;background:#ef4444;'
           +'transform:translateX(-50%);z-index:5;cursor:help;'
           +'box-shadow:0 0 4px rgba(239,68,68,.7)"></div>';
-        // Etiqueta "No se realizó" encima de la línea roja (solo si el segmento es suficientemente ancho)
         if(segsPerYear<=6){
           var lblLeft=((startMo-1)/12*100).toFixed(3);
           var lblW=(segWidthPct).toFixed(3);
