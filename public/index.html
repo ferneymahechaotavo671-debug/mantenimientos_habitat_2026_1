@@ -1911,41 +1911,67 @@ function renderGantt(){
       }
     });
 
-    // ── Detectar si es tipo con vigencia (extintor, avalúo, póliza, certificación) ──
-    var typeUp = (m.type||"").toUpperCase();
-    var isVigType = typeUp.indexOf("EXTINTOR")>=0 || typeUp.indexOf("AVALUO")>=0
-      || typeUp.indexOf("AVALÚO")>=0 || typeUp.indexOf("POLIZA")>=0
-      || typeUp.indexOf("PÓLIZA")>=0 || typeUp.indexOf("CERTIFICAC")>=0;
-
-    // Buscar el registro realizado más reciente del año para obtener doneDate y nextDate
+    // Buscar el registro done más reciente del año (para label de la barra)
     var vigRec=null;
     for(var vm=12;vm>=1;vm--){ var vr=recMap[vm]; if(vr&&vr.done){vigRec=vr;break;} }
 
-    // Barra verde continua desde enero (left:0) hasta el fin del último segmento realizado
+    // Barra verde continua desde enero hasta el fin del último segmento realizado
     var greenHtml="";
     if(lastDoneMo>0){
       var greenW=(lastDoneMo/12*100).toFixed(3);
-      // Para tipos con vigencia: mostrar texto "Realizado: X — Vigente hasta: Y" dentro de la barra
+
+      // Texto interior de la barra: siempre mostrar info si hay registro done
       var barLabel="";
-      if(isVigType && vigRec){
-        var doneTxt = vigRec.doneDate ? "Realizado: "+fmtDate(vigRec.doneDate) : "";
-        var vigDate = vigRec.nextDate || m.nextDate || "";
-        var vigTxt  = vigDate ? "Vigente hasta: "+fmtDate(vigDate) : "";
-        var fullTxt = [doneTxt, vigTxt].filter(Boolean).join("  —  ");
-        if(fullTxt){
-          // Verificar si está vencido
-          var isExp = vigDate && new Date(vigDate+"T00:00:00") < now;
+      if(vigRec){
+        var _doneTxt = vigRec.doneDate ? "Realizado: "+fmtDate(vigRec.doneDate) : "";
+        var _vigDate  = vigRec.nextDate || m.nextDate || "";
+        var _vigTxt   = _vigDate ? "  —  Vigente hasta: "+fmtDate(_vigDate) : "";
+        var _fullTxt  = _doneTxt + _vigTxt;
+        if(_fullTxt){
+          var _isExp = _vigDate && new Date(_vigDate+"T00:00:00") < now;
           barLabel='<span style="'
-            +'position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);'
-            +'text-align:center;font-size:9px;font-weight:700;'
-            +'color:'+(isExp?"#7f1d1d":"#14532d")+';pointer-events:none;z-index:4;'
-            +'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;'
-            +'">'+esc(fullTxt)+'</span>';
+            +'position:absolute;left:0;right:32px;top:50%;transform:translateY(-50%);'
+            +'text-align:center;font-size:9px;font-weight:700;letter-spacing:.1px;'
+            +'color:'+(parseFloat(greenW)>60?(_isExp?"#7f1d1d":"#14532d"):"#14532d")+';'
+            +'pointer-events:none;z-index:4;'
+            +'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;'
+            +'">'+esc(_fullTxt)+'</span>';
         }
       }
+
       greenHtml='<div style="position:absolute;left:0;width:'+greenW+'%;top:0;height:100%;'
         +'background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px 0 0 6px;z-index:2"></div>'
         +barLabel;
+    }
+
+    // ── Líneas rojas para próximos mantenimientos programados (meses futuros) ──
+    // Usar m.nextDate y los nextDate de los registros del año para marcar el próximo
+    var nextProgDate = m.nextDate || "";
+    // Si hay registro reciente con nextDate, ese tiene prioridad
+    for(var nvm=12;nvm>=1;nvm--){ var nvr=recMap[nvm]; if(nvr&&nvr.nextDate){nextProgDate=nvr.nextDate;break;} }
+    if(nextProgDate){
+      var npd=new Date(nextProgDate+"T00:00:00");
+      var npdYear=npd.getFullYear();
+      var npdMo=npd.getMonth()+1;
+      // Solo mostrar si la fecha programada cae en el año del calendario y es un mes futuro
+      if(npdYear===calYear && (calYear>nowYear||(calYear===nowYear&&npdMo>nowMo))){
+        var npdPct=((npdMo-0.5)/12*100).toFixed(3);
+        var npdTip="Próximo programado: "+fmtDate(nextProgDate);
+        redLines+='<div title="'+esc(npdTip)+'" style="'
+          +'position:absolute;left:'+npdPct+'%;top:0;'
+          +'width:2px;height:100%;background:#f97316;'
+          +'transform:translateX(-50%);z-index:5;cursor:help;'
+          +'box-shadow:0 0 4px rgba(249,115,22,.8)"></div>';
+        if(segsPerYear<=4){
+          redLines+='<span style="'
+            +'position:absolute;left:'+((npdMo-1)/12*100).toFixed(3)+'%;'
+            +'width:'+(segWidthPct).toFixed(3)+'%;'
+            +'top:50%;transform:translateY(-50%);'
+            +'text-align:center;font-size:8px;font-weight:700;'
+            +'color:#9a3412;pointer-events:none;z-index:6;white-space:nowrap;overflow:hidden;'
+            +'">Próx. '+MONTHS_S[npdMo-1]+'</span>';
+        }
+      }
     }
 
     // Líneas divisoras mensuales sutiles (encima del verde)
@@ -1974,88 +2000,7 @@ function renderGantt(){
 
     html+='<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
     html+='<div class="prog-name" title="'+esc(m.type)+' — '+(periodLabel||'sin periodicidad')+'">'+esc(m.type)+perTag+missTag+'</div>';
-
-    // ── Tarjeta especial para anuales/trienales/OTRO: mostrar fecha realizado + vigencia ──
-    if(segsPerYear===1){
-      // Buscar el primer registro done de este año (o del año anterior como vigencia)
-      var anualRec=null;
-      for(var armo=1;armo<=12;armo++){ var ar=recMap[armo]; if(ar&&ar.done){anualRec=ar;break;} }
-      // Si no hay registro done este año, buscar en años anteriores para mostrar vigencia vigente
-      if(!anualRec){
-        for(var armo2=1;armo2<=12;armo2++){ var ar2=recMap[armo2]; if(ar2){anualRec=ar2;break;} }
-      }
-
-      var vigDate  = anualRec ? (anualRec.nextDate||"") : (m.nextDate||"");
-      var doneDate = anualRec ? (anualRec.doneDate||"") : "";
-      var isDoneA  = anualRec && anualRec.done;
-
-      // Formatear fechas
-      function fmtD(d){ if(!d) return ""; var p=d.split("-"); return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:""; }
-      var doneFmt = fmtD(doneDate);
-      var vigFmt  = fmtD(vigDate);
-
-      // ¿Está vigente o vencido?
-      var isVencido=false;
-      if(vigDate){
-        var vigObj=new Date(vigDate+"T00:00:00");
-        isVencido=vigObj<now;
-      }
-
-      // Color del card según estado
-      var cardBg, cardBorder, cardTxtColor, statusIcon, statusTxt;
-      if(isDoneA && vigDate && !isVencido){
-        cardBg="linear-gradient(90deg,#dcfce7,#f0fdf4)";
-        cardBorder="#86efac";
-        cardTxtColor="#166534";
-        statusIcon="✓";
-        statusTxt="VIGENTE";
-      } else if(isDoneA && (!vigDate || isVencido)){
-        cardBg="linear-gradient(90deg,#fef9c3,#fefce8)";
-        cardBorder="#fde047";
-        cardTxtColor="#854d0e";
-        statusIcon="⚠";
-        statusTxt=isVencido?"VENCIDO":"REALIZADO";
-      } else if(anualRec && !isDoneA){
-        cardBg="linear-gradient(90deg,#fee2e2,#fff1f2)";
-        cardBorder="#fca5a5";
-        cardTxtColor="#991b1b";
-        statusIcon="✕";
-        statusTxt="NO REALIZADO";
-      } else {
-        cardBg="linear-gradient(90deg,#f1f5f9,#f8fafc)";
-        cardBorder="#cbd5e1";
-        cardTxtColor="#475569";
-        statusIcon="—";
-        statusTxt="SIN REGISTRO";
-      }
-
-      // Texto principal: "Realizado el DD/MM/AAAA · Vigente hasta DD/MM/AAAA"
-      var infoTxt="";
-      if(doneFmt) infoTxt+='<span style="font-size:10px;font-weight:600;color:'+cardTxtColor+'">Realizado el '+doneFmt+'</span>';
-      if(doneFmt && vigFmt) infoTxt+='<span style="font-size:10px;color:'+cardTxtColor+';opacity:.6;margin:0 6px">·</span>';
-      if(vigFmt)  infoTxt+='<span style="font-size:10px;font-weight:600;color:'+(isVencido?"#dc2626":cardTxtColor)+'">'+(isVencido?"Venció el ":"Vigente hasta ")+vigFmt+'</span>';
-      if(!infoTxt) infoTxt='<span style="font-size:10px;color:'+cardTxtColor+'">Sin datos de registro</span>';
-
-      html+='<div style="'
-        +'position:relative;height:28px;'
-        +'background:'+cardBg+';'
-        +'border-radius:6px;overflow:hidden;'
-        +'border:1px solid '+cardBorder+';'
-        +'display:flex;align-items:center;padding:0 10px;gap:8px;'
-        +'">';
-      // Badge de estado a la izquierda
-      html+='<span style="'
-        +'font-size:9px;font-weight:800;color:'+cardTxtColor+';'
-        +'background:rgba(255,255,255,.7);border-radius:3px;padding:1px 5px;'
-        +'flex-shrink:0;white-space:nowrap;'
-        +'">'+statusIcon+' '+statusTxt+'</span>';
-      // Info texto
-      html+='<span style="display:flex;align-items:center;gap:0;overflow:hidden;white-space:nowrap">'+infoTxt+'</span>';
-      html+='</div></div>';
-      return; // saltar el render de barra normal
-    }
-
-    html+='<div style="position:relative;height:'+(isVigType?'26':'22')+'px;background:#f1f5f9;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0">';
+    html+='<div style="position:relative;height:22px;background:#f1f5f9;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0">';
     html+=greenHtml;
     html+=dividerHtml;
     html+=redLines;
