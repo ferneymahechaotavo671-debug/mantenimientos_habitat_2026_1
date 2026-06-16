@@ -1799,180 +1799,113 @@ function renderGantt(){
   mHtml+='</div>';
   monthsEl.innerHTML=mHtml;
 
-  // ── Global % — basado en segmentos esperados según periodicidad ───────────────
+  // ── Global % — counts every real record (✓ or ✕) across all items ───────────
   var gExpected=0, gDone=0;
   allMaints.forEach(function(m){
-    var iv=pgInterval(m.periodicidad);
-    var segs = iv>0 && iv<12 ? Math.floor(12/iv) : 1; // segmentos esperados en el año
-    // Solo contamos los segmentos que ya pasaron (no los futuros)
-    var pasados=0;
-    for(var si=0;si<segs;si++){
-      var startMo2 = iv>0&&iv<12 ? 1+si*iv : 1;
-      var isFut2 = calYear>nowYear||(calYear===nowYear&&startMo2>nowMo);
-      if(!isFut2) pasados++;
-    }
-    gExpected+=pasados;
-    // contar hechos
-    for(var rmo2=1;rmo2<=12;rmo2++){
-      var rr=getRecord(m,calYear,rmo2);
-      if(rr&&rr.done) gDone++;
+    for(var mo=1; mo<=12; mo++){
+      var rec=getRecord(m, calYear, mo);
+      if(rec){ gExpected++; if(rec.done) gDone++; }
     }
   });
   var gPct=gExpected>0?Math.round(gDone/gExpected*100):null;
   pctEl.textContent=gPct!==null?gPct+"%":"—";
   pctEl.style.color=gPct===null?"#fff":gPct>=80?"#4ade80":gPct>=50?"#fbbf24":"#f87171";
 
-  // ── Rows — ALL equipment, guided by periodicidad ─────────────────────────────
+  // ── Rows — ALL equipment, including OTRO/avalúo/póliza ───────────────────────
   var html="";
 
   allMaints.forEach(function(m){
-    var interval = pgInterval(m.periodicidad); // 1,2,3,4,6,12,36 or 0
-    // Equipos sin periodicidad definida (OTRO, vacío) → interval=0, tratar como ANUAL (1 segmento)
-    var segsPerYear = interval>0 && interval<12 ? Math.floor(12/interval) : 1;
-    // segsPerYear: MENSUAL=12, BIMESTRAL=6, TRIMESTRAL=4, CUATRIMESTRAL=3, SEMESTRAL=2, ANUAL/TRIENAL/OTRO=1
-    var segWidthPct = 100 / segsPerYear; // ancho de cada segmento en %
-
-    // Para MENSUAL: los 12 meses son segmentos 1..12
-    // Para BIMESTRAL: segmentos en meses 1,3,5,7,9,11 (cada 2 desde enero)
-    // etc.  Siempre empezamos en enero (mes 1).
-    var segMonths = []; // mes de inicio de cada segmento
-    if(interval>=12 || interval===0){
-      segMonths=[1]; // ANUAL / TRIENAL / OTRO → 1 segmento = todo el año
-    } else {
-      for(var s=0; s<segsPerYear; s++) segMonths.push(1 + s*interval);
+    // Collect every real record this year (regardless of periodicidad)
+    var recMonths=[];
+    for(var mo=1; mo<=12; mo++){
+      var rec=getRecord(m, calYear, mo);
+      if(rec) recMonths.push({mo:mo, rec:rec});
     }
 
-    // Recopilar registros reales de este año
-    var recMap={};
-    for(var rmo=1; rmo<=12; rmo++){
-      var rrec=getRecord(m, calYear, rmo);
-      if(rrec) recMap[rmo]=rrec;
+    // ── VIG (vigente) special case — póliza, avalúo, certificaciones anuales ──
+    var vigRec = recMonths.find(function(x){ return x.rec.done && x.rec.label && x.rec.label.toUpperCase()==="VIG"; });
+    if(vigRec){
+      var vigDate = vigRec.rec.nextDate || m.nextDate || "";
+      var vigTxt = "VIGENTE";
+      var isExpired = false;
+      if(vigDate){
+        var vp = vigDate.split("-");
+        if(vp.length===3){
+          vigTxt = "Vigente hasta "+vp[2]+"/"+MONTHS[parseInt(vp[1])-1]+"/"+vp[0];
+          var vigDateObj = new Date(vigDate+"T00:00:00");
+          isExpired = vigDateObj < now;
+        }
+      }
+      html+='<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
+      html+='<div class="prog-name" title="'+esc(m.type)+'">'+esc(m.type)+'</div>';
+      html+='<div style="position:relative;height:22px;background:#f1f5f9;border-radius:6px;overflow:hidden">';
+      html+='<div style="position:absolute;left:0;width:100%;top:0;height:100%;background:linear-gradient(90deg,'
+           +(isExpired?'#dc2626,#ef4444':'#059669,#10b981')
+           +');border-radius:6px;display:flex;align-items:center;justify-content:center">';
+      html+='<span style="font-size:10px;font-weight:800;color:#fff;letter-spacing:.3px" title="'+esc(vigTxt)+'">'+(isExpired?"⚠ VENCIDO — ":"✓ ")+esc(vigTxt)+'</span>';
+      html+='</div></div></div>';
+      return; // skip normal bar logic for this equipment
     }
 
-    // Contar totales para el % global
-    var totalDone=0, totalMiss=0, totalSched=0;
-
-    // Construir los segmentos HTML
-    var segsHtml="";
-    var dividerHtml="";
-
-    // Líneas divisoras entre segmentos (en los límites de mes)
-    for(var g=1;g<12;g++){
-      dividerHtml+='<div style="position:absolute;left:'+(g/12*100).toFixed(2)+'%;top:0;width:1px;height:100%;background:rgba(0,0,0,.07);pointer-events:none;z-index:1"></div>';
-    }
-
-    segMonths.forEach(function(startMo, idx){
-      var segLeft = (idx * segWidthPct).toFixed(3);
-      var segW    = segWidthPct.toFixed(3);
-      // Meses que cubre este segmento (startMo .. startMo+interval-1, capped at 12)
-      var endMo   = interval>0 && interval<12 ? Math.min(startMo+interval-1, 12) : 12;
-
-      // ¿Ya pasó este segmento? (para saber si es "pendiente" o "futuro")
-      var segIsPast   = calYear < nowYear || (calYear===nowYear && endMo <= nowMo);
-      var segIsFuture = calYear > nowYear || (calYear===nowYear && startMo > nowMo);
-
-      // Buscar registro dentro de los meses que cubre este segmento
-      // Para MENSUAL cada segmento tiene 1 mes; para ANUAL cubre los 12.
-      var segRec = null;
-      for(var smo=startMo; smo<=endMo; smo++){
-        if(recMap[smo]){ segRec = recMap[smo]; break; }
-      }
-
-      // ── Determinar color y estado ──
-      var bgColor, labelIcon="", labelColor="#fff";
-
-      if(segRec && segRec.done){
-        // Realizado — verde
-        bgColor="linear-gradient(90deg,#16a34a,#4ade80)";
-        totalDone++;
-        totalSched++;
-      } else if(segRec && !segRec.done){
-        // No realizado — rojo
-        bgColor="linear-gradient(90deg,#dc2626,#f87171)";
-        labelIcon="\u2715";
-        totalMiss++;
-        totalSched++;
-      } else if(segIsFuture){
-        // Futuro sin registro — gris (no cuenta)
-        bgColor="#e2e8f0";
-      } else {
-        // Pasado sin registro = pendiente — rojo
-        bgColor="linear-gradient(90deg,#dc2626,#f87171)";
-        labelIcon="\u2715";
-        totalSched++;
-      }
-
-      // Tooltip
-      var tipParts=[];
-      if(interval<12 && interval>0) tipParts.push(MFULL[startMo-1]+(endMo>startMo?" – "+MFULL[endMo-1]:""));
-      else tipParts.push(calYear+" (anual)");
-      if(segRec&&segRec.done){
-        tipParts.push("✅ Realizado"+(segRec.doneDate?" el "+segRec.doneDate:""));
-        if(segRec.label) tipParts.push(segRec.label);
-      } else if(segRec&&!segRec.done){
-        tipParts.push("✕ No realizado");
-      } else if(segIsFuture){
-        tipParts.push("⏳ Aún no corresponde");
-      } else {
-        tipParts.push("⚠ Pendiente de registro");
-        var nd2=m.next_date||m.nextDate||"";
-        if(nd2) tipParts.push("Próximo: "+nd2);
-      }
-      var tip=esc(tipParts.join(" | "));
-
-      // Gap de 2px entre segmentos
-      var gap = idx < segMonths.length-1 ? 0.5 : 0;
-
-      segsHtml+='<div title="'+tip+'" style="'
-        +'position:absolute;'
-        +'left:'+segLeft+'%;'
-        +'width:'+(parseFloat(segW)-gap).toFixed(3)+'%;'
-        +'top:2px;height:calc(100% - 4px);'
-        +'background:'+bgColor+';'
-        +'border-radius:4px;'
-        +'z-index:2;cursor:help;'
-        +'transition:filter .15s;'
-        +'"></div>';
-
-      // Ícono centrado sobre el segmento
-      if(labelIcon){
-        segsHtml+='<span style="'
-          +'position:absolute;'
-          +'left:'+segLeft+'%;width:'+segW+'%;'
-          +'top:50%;transform:translateY(-50%);'
-          +'text-align:center;font-size:'+(segsPerYear>=6?"8":"9")+'px;font-weight:800;'
-          +'color:'+labelColor+';pointer-events:none;z-index:3;'
-          +'">'+labelIcon+'</span>';
-      }
+    var doneCount=0;
+    var missMonths=[];
+    recMonths.forEach(function(x){
+      if(x.rec.done) doneCount++;
+      else missMonths.push(x);
     });
 
-    // % del equipo (solo segmentos pasados/presentes)
-    var rowPct = totalSched>0 ? Math.round(totalDone/totalSched*100) : null;
-    var pctColor = rowPct===null?"#94a3b8":rowPct===100?"#16a34a":rowPct>=50?"#d97706":"#dc2626";
+    // % based only on real records (if none, show 0% with empty bar)
+    var rowPct = recMonths.length>0 ? Math.round(doneCount/recMonths.length*100) : 0;
 
-    // Badge %
-    var badgeHtml = '<span style="'
-      +'position:absolute;right:5px;top:50%;transform:translateY(-50%);'
-      +'font-size:9px;font-weight:800;color:'+pctColor+';z-index:10;'
-      +'background:rgba(255,255,255,.88);border-radius:3px;padding:0 3px;'
-      +'pointer-events:none;'
-      +'">'+(rowPct!==null?rowPct+"%":"—")+'</span>';
+    // Bar ALWAYS spans the full 12 months (Jan–Dec), gray background = full year
+    // Green fill = proportional width based on doneCount among recorded months,
+    // but visually anchored to grow rightward from January up to the last done month.
+    // Determine the rightmost point reached: last recorded month overall.
+    var lastMo = recMonths.length>0 ? recMonths[recMonths.length-1].mo : 0;
 
-    // Tag de periodicidad
-    var periodLabel = m.periodicidad||"";
-    var perTag = periodLabel
-      ? '<span style="font-size:8px;font-weight:600;color:var(--mu);background:#f1f5f9;border-radius:3px;padding:1px 4px;margin-left:5px;flex-shrink:0">'+esc(periodLabel)+'</span>'
-      : '';
-    var missTag = totalMiss>0
-      ? '<span style="font-size:8px;color:var(--danger);font-weight:800;margin-left:4px">('+totalMiss+'✕)</span>'
-      : '';
+    // Green width: percentage of the full year (12 months) reached by done records
+    // We fill from Jan(0%) up to lastMo proportionally, but only count it "green"
+    // up to the ratio of done/total recorded, applied across the full year span.
+    var fillWidthFull = lastMo>0 ? (lastMo/12*100).toFixed(3) : "0";
+    // Apply done ratio within that span (e.g. if 1 of 2 recorded done -> half green, half gray-ish)
+    var doneRatio = recMonths.length>0 ? (doneCount/recMonths.length) : 0;
+    var greenWidth = (parseFloat(fillWidthFull) * doneRatio).toFixed(3);
+
+    // Red thin lines — only for explicit ✕ records, positioned at their real month
+    var redLines="";
+    missMonths.forEach(function(x){
+      var centerPct=((x.mo-0.5)/12*100).toFixed(3);
+      var nd=(x.rec&&(x.rec.nextDate||x.rec.next_date))||m.next_date||m.nextDate||"";
+      var tip="No realizado: "+MFULL[x.mo-1];
+      if(nd){var p=nd.split("-");if(p.length===3) tip+="  |  Programado: "+p[2]+"/"+MONTHS[parseInt(p[1])-1]+"/"+p[0];}
+      redLines+='<div title="'+tip+'" style="'
+        +'position:absolute;left:'+centerPct+'%;top:0;'
+        +'width:3px;height:100%;background:#ef4444;'
+        +'transform:translateX(-50%);z-index:5;cursor:help;'
+        +'box-shadow:0 0 5px rgba(239,68,68,.7)"></div>';
+    });
+
+    // Subtle month dividers across the full 12-month track
+    var dividers="";
+    for(var g=1;g<12;g++){
+      dividers+='<div style="position:absolute;left:'+(g/12*100).toFixed(2)+'%;top:0;width:1px;height:100%;background:rgba(255,255,255,.2);pointer-events:none"></div>';
+    }
 
     html+='<div class="prog-row" style="grid-template-columns:'+gridCols+'">';
-    html+='<div class="prog-name" title="'+esc(m.type)+' — '+(periodLabel||'sin periodicidad')+'">'+esc(m.type)+perTag+missTag+'</div>';
-    html+='<div style="position:relative;height:24px;background:#f1f5f9;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0">';
-    html+=dividerHtml;
-    html+=segsHtml;
-    html+=badgeHtml;
+    html+='<div class="prog-name" title="'+esc(m.type)+'">'+esc(m.type)
+         +(missMonths.length?' <span style="font-size:9px;color:var(--danger);font-weight:800">('+missMonths.length+'✕)</span>':'')
+         +'</div>';
+    // Full-width gray track = entire year Jan-Dec
+    html+='<div style="position:relative;height:22px;background:#f1f5f9;border-radius:6px;overflow:hidden">';
+    html+=dividers;
+    // Green fill from Jan(0) up to proportional point
+    if(parseFloat(greenWidth)>0){
+      html+='<div style="position:absolute;left:0;width:'+greenWidth+'%;top:0;height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px 0 0 6px"></div>';
+    }
+    // Pct label at right edge
+    html+='<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:800;color:'+(parseFloat(greenWidth)>85?"#fff":"#475569")+';white-space:nowrap;z-index:4">'+rowPct+'%</span>';
+    // Red lines on top
+    html+=redLines;
     html+='</div></div>';
   });
 
